@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ByBook · Catálogo</title>
+<link rel="icon" href="img/logo.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..700&amp;family=Inter:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet">
+<!-- Estilos comunes de ByBook -->
+<link rel="stylesheet" href="css/bybook.css">
+<!-- Estilos propios de esta página -->
+<style>
+.catalogo-cabecera { padding: clamp(24px, 4vw, 40px) 0 18px; border-bottom: 1px solid var(--gris); }
+.catalogo-cabecera .fila-titulo { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px 32px; }
+.catalogo-cabecera .entrada-grupo { flex: 1 1 340px; max-width: 520px; }
+.barra-filtros { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 24px; padding: 12px 0; border-bottom: 1px solid var(--linea); position: sticky; top: 67px; z-index: 5; background: var(--blanco); }
+.barra-filtros .controles { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin-left: auto; }
+.barra-filtros label { font-size: .85rem; font-weight: 600; }
+.barra-filtros select.entrada { min-height: 40px; font-size: .9rem; }
+.resultado-cuenta { font-size: .9rem; color: var(--gris-suave); }
+.mi-estado { position: absolute; left: 6px; top: 6px; z-index: 2; }
+@media (max-width: 1000px) { .barra-filtros { top: 0; position: static; } }
+@media (max-width: 600px) { .barra-filtros .controles { margin-left: 0; } }
+</style>
+</head>
+<body>
+<!-- Aquí se dibuja la página: js/dc.js la pinta a partir de la plantilla de abajo -->
+<div id="dc-app" style="display: contents"></div>
+
+<!-- ===== Plantilla y lógica de la página ===== -->
+<template data-dc-component="__root">
+<dc-import name="Nav" active="catalogo"></dc-import>
+
+<main id="contenido">
+<section class="catalogo-cabecera">
+<div class="contenedor pila" style="gap: 16px">
+<div class="fila-titulo">
+<div class="pila" style="gap: 4px">
+<h1 class="titulo titulo-l">Catálogo</h1>
+<p class="resultado-cuenta" aria-live="polite">{{cuenta}}</p>
+</div>
+<form role="search" class="entrada-grupo" onSubmit="{{nada}}">
+<label for="filtro" class="solo-lector">Buscar por título o autor</label>
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
+<input id="filtro" type="search" value="{{q}}" onInput="{{buscar}}" placeholder="Título o autor…" autocomplete="off">
+<sc-if value="{{hayBusqueda}}"><button type="button" class="boton boton--texto boton--pequeno" onClick="{{limpiarBusqueda}}">Borrar</button></sc-if>
+</form>
+</div>
+</div>
+</section>
+
+<div class="contenedor">
+<div class="barra-filtros">
+<div class="filtros" role="group" aria-label="Formato">
+<sc-for list="{{formatos}}" as="f"><button type="button" class="filtro" onClick="{{f.elegir}}" aria-pressed="{{f.activo}}">{{f.nombre}}<span class="num">{{f.num}}</span></button></sc-for>
+</div>
+<div class="controles">
+<label for="genero">Género</label>
+<select id="genero" class="entrada" value="{{genero}}" onChange="{{elegirGenero}}"><sc-for list="{{generos}}" as="g"><option value="{{g}}">{{g}}</option></sc-for></select>
+<label for="orden">Ordenar</label>
+<select id="orden" class="entrada" value="{{orden}}" onChange="{{elegirOrden}}"><option value="titulo">Título A–Z</option><option value="nota">Mejor valoradas</option><option value="nuevo">Más recientes</option><option value="antiguo">Más antiguas</option></select>
+<button type="button" class="boton boton--suave boton--pequeno" onClick="{{sorprender}}">Sorpréndeme</button>
+</div>
+</div>
+
+<section class="seccion" style="padding-top: 28px" aria-label="Resultados">
+<sc-if value="{{vacio}}">
+<div class="vacio vacio--centro">
+<img src="img/logo.svg" alt="">
+<h2 class="titulo titulo-m">Ninguna obra coincide</h2>
+<p class="texto-suave">{{textoVacio}}</p>
+<button type="button" class="boton boton--principal" onClick="{{limpiarTodo}}">Quitar filtros</button>
+</div>
+</sc-if>
+<div class="estanteria">
+<sc-for list="{{obras}}" as="b">
+<article class="obra">
+<a href="{{b.url}}" class="enlace-portada" style="position: relative" aria-label="{{b.etiquetaAccesible}}">
+<sc-if value="{{b.miEstado}}"><span class="mi-estado etiqueta etiqueta--{{b.miEstado}}">{{b.miEstadoTexto}}</span></sc-if>
+<dc-import name="Portada" obra="{{b}}"></dc-import>
+</a>
+<div class="obra-info">
+<a href="{{b.url}}" class="obra-titulo">{{b.titulo}}</a>
+<span class="obra-autor">{{b.autorNombre}}</span>
+<span class="obra-meta"><span>{{b.formatoNombre}} · {{b.anio}}</span><sc-if value="{{b.media}}"><span><span class="estrellas" aria-hidden="true">★</span> {{b.media}}</span></sc-if><sc-if value="{{b.miFavorito}}"><span style="color: var(--naranja-tinta)">♥ favorita</span></sc-if></span>
+</div>
+</article>
+</sc-for>
+</div>
+</section>
+</div>
+</main>
+
+<dc-import name="Pie"></dc-import>
+</template>
+<script type="text/x-dc" data-dc-logic="__root">
+// Catálogo: búsqueda, formato, género y orden. Los filtros se leen de la dirección
+// (explorar.html?q=dune&formato=libro) y se escriben en ella, así se pueden compartir.
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = {
+      q: ByBook.parametro('q') || '',
+      formato: ByBook.parametro('formato') || 'todos',
+      genero: ByBook.parametro('genero') || 'Todos',
+      orden: 'titulo'
+    };
+  }
+  // Cambia el estado y actualiza la dirección sin recargar la página
+  filtrar(cambios) {
+    const s = Object.assign({}, this.state, cambios);
+    const p = new URLSearchParams();
+    if (s.q) p.set('q', s.q);
+    if (s.formato !== 'todos') p.set('formato', s.formato);
+    if (s.genero !== 'Todos') p.set('genero', s.genero);
+    history.replaceState(null, '', 'explorar.html' + (p.toString() ? '?' + p.toString() : ''));
+    this.setState(cambios);
+  }
+  renderVals() {
+    const D = ByBookDatos, st = this.state;
+    // Normalizamos el texto para que "cafe" encuentre "café"
+    const normal = (t) => t.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+    const q = normal(st.q.trim());
+    const todas = D.listaObras();
+    const porFormato = todas.filter((o) => st.formato === 'todos' || o.formato === st.formato);
+    let lista = porFormato.filter((o) =>
+      (st.genero === 'Todos' || o.genero === st.genero) &&
+      (!q || normal(o.titulo).includes(q) || normal(D.autor(o.autor).nombre).includes(q)));
+    let vistas = lista.map((o) => ByBook.vistaObra(o));
+    const nota = (v) => parseFloat((v.media || '0').replace(',', '.'));
+    // Relevancia: con una búsqueda, primero el título exacto, luego los que empiezan igual
+    const relevancia = (v) => !q ? 0 : normal(v.titulo) === q ? 0 : normal(v.titulo).startsWith(q) ? 1 : 2;
+    vistas.sort((a, b) => st.orden === 'nuevo' ? b.anio - a.anio : st.orden === 'antiguo' ? a.anio - b.anio : st.orden === 'nota' ? nota(b) - nota(a)
+      : relevancia(a) - relevancia(b) || a.titulo.localeCompare(b.titulo, 'es'));
+
+    const formatos = [['todos', 'Todo']].concat(Object.keys(D.FORMATOS).map((k) => [k, D.FORMATOS[k].plural]));
+    const generos = ['Todos'].concat(Array.from(new Set(porFormato.map((o) => o.genero))).sort());
+    return {
+      q: st.q, hayBusqueda: !!st.q,
+      buscar: (e) => this.filtrar({ q: e.target.value }),
+      limpiarBusqueda: () => this.filtrar({ q: '' }),
+      nada: () => {},
+      cuenta: vistas.length + (vistas.length === 1 ? ' obra' : ' obras') + (st.q ? ' para «' + st.q + '»' : ''),
+      formatos: formatos.map((f) => ({
+        nombre: f[1], num: todas.filter((o) => f[0] === 'todos' || o.formato === f[0]).length,
+        activo: st.formato === f[0] ? 'true' : 'false',
+        elegir: () => this.filtrar({ formato: f[0], genero: 'Todos' })
+      })),
+      generos, genero: generos.includes(st.genero) ? st.genero : 'Todos',
+      elegirGenero: (e) => this.filtrar({ genero: e.target.value }),
+      orden: st.orden,
+      elegirOrden: (e) => this.setState({ orden: e.target.value }),
+      // Sorpréndeme: abre la ficha de una obra al azar entre los resultados
+      sorprender: () => {
+        const bolsa = lista.length ? lista : todas;
+        window.location.href = ByBook.urlObra(bolsa[Math.floor(Math.random() * bolsa.length)].id);
+      },
+      vacio: vistas.length === 0,
+      textoVacio: st.q ? 'No hay resultados para «' + st.q + '» con estos filtros.' : 'Prueba con otro formato o género.',
+      limpiarTodo: () => this.filtrar({ q: '', formato: 'todos', genero: 'Todos' }),
+      obras: vistas
+    };
+  }
+}
+</script>
+
+<!-- Motor de plantillas, datos de ejemplo, tus datos guardados y piezas comunes (cabecera, pie, portada) -->
+<script src="js/dc.js"></script>
+<script src="js/datos.js"></script>
+<script src="js/almacen.js"></script>
+<script src="js/componentes.js"></script>
+</body>
+</html>

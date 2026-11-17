@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ByBook · Sagas</title>
+<link rel="icon" href="img/logo.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..700&amp;family=Inter:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet">
+<!-- Estilos comunes de ByBook -->
+<link rel="stylesheet" href="css/bybook.css">
+<!-- Estilos propios de esta página -->
+<style>
+.con-lateral--sagas { grid-template-columns: 280px minmax(0, 1fr); }
+@media (max-width: 860px) { .con-lateral--sagas { grid-template-columns: minmax(0, 1fr); } }
+.indice-sagas button { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 12px; width: 100%; padding: 14px 0; border: 0; border-bottom: 1px solid var(--linea); background: transparent; text-align: left; }
+.indice-sagas button:first-child { border-top: 1px solid var(--linea); }
+.indice-sagas button[aria-pressed="true"] { box-shadow: inset 4px 0 0 var(--naranja); padding-left: 14px; }
+.indice-sagas .progreso { grid-column: 1 / -1; }
+.saga-volumenes { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 28px 18px; }
+.saga-volumenes li { display: flex; flex-direction: column; gap: 8px; animation: aparece .35s ease both; }
+.saga-volumenes li[data-leido="true"] .enlace-portada { opacity: .55; }
+</style>
+</head>
+<body>
+<!-- Aquí se dibuja la página: js/dc.js la pinta a partir de la plantilla de abajo -->
+<div id="dc-app" style="display: contents"></div>
+
+<!-- ===== Plantilla y lógica de la página ===== -->
+<template data-dc-component="__root">
+<dc-import name="Nav" active="sagas"></dc-import>
+
+<main id="contenido">
+<div class="contenedor">
+<section style="padding: clamp(28px, 5vw, 48px) 0 24px">
+<span class="antetitulo">Orden de lectura</span>
+<h1 class="titulo titulo-xl" style="margin-top: 8px">Sagas</h1>
+<p class="entradilla" style="margin-top: 10px">Sigue cada saga en orden. El progreso se calcula con lo que marcas como «Leído» en tu biblioteca, así que también cambia desde la ficha de cada volumen.</p>
+</section>
+
+<div class="con-lateral con-lateral--sagas" style="padding-bottom: 72px">
+<nav class="indice-sagas" aria-label="Elegir saga">
+<sc-for list="{{sagas}}" as="s">
+<button type="button" onClick="{{s.elegir}}" aria-pressed="{{s.activa}}"><span class="titulo titulo-s">{{s.nombre}}</span><span class="texto-pequeno texto-suave">{{s.texto}}</span><span class="texto-mini texto-suave">{{s.autor}}</span><span class="progreso"><span style="width: {{s.pct}}"></span></span></button>
+</sc-for>
+</nav>
+
+<section aria-labelledby="titulo-saga">
+<div class="cabecera-seccion" style="align-items: flex-end">
+<div class="pila" style="gap: 4px"><h2 id="titulo-saga" class="titulo titulo-l">{{saga.nombre}}</h2><a href="{{saga.autorUrl}}" class="enlace texto-pequeno" style="align-self: flex-start">{{saga.autor}}</a></div>
+<span class="titulo titulo-m" aria-hidden="true">{{saga.pct}}</span>
+</div>
+<div class="progreso" role="progressbar" aria-label="Progreso de la saga" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{saga.pctN}}"><span style="width: {{saga.pct}}"></span></div>
+<p style="margin: 12px 0 6px" aria-live="polite">{{saga.siguiente}}</p>
+<sc-if value="{{saga.nota}}"><p class="texto-pequeno texto-suave" style="margin-bottom: 18px">{{saga.nota}}</p></sc-if>
+<ol class="saga-volumenes" style="margin-top: 20px">
+<sc-for list="{{volumenes}}" as="v">
+<li data-leido="{{v.leido}}">
+<a href="{{v.o.url}}" class="enlace-portada" aria-label="Volumen {{v.o.volumen}}: {{v.o.titulo}}"><dc-import name="Portada" obra="{{v.o}}"></dc-import></a>
+<a href="{{v.o.url}}" class="obra-titulo">{{v.o.titulo}}</a>
+<span class="obra-meta"><span>{{v.o.anio}}</span><sc-if value="{{v.o.miEstado}}"><span class="etiqueta etiqueta--{{v.o.miEstado}}">{{v.o.miEstadoTexto}}</span></sc-if><sc-if value="{{v.esSiguiente}}"><span class="etiqueta etiqueta--quiero">Siguiente</span></sc-if></span>
+<button type="button" class="boton boton--contorno boton--pequeno alternar" onClick="{{v.marcar}}" aria-pressed="{{v.leido}}">{{v.texto}}</button>
+</li>
+</sc-for>
+</ol>
+</section>
+</div>
+</div>
+</main>
+
+<dc-import name="Pie"></dc-import>
+</template>
+<script type="text/x-dc" data-dc-logic="__root">
+// Sagas: el avance sale de los estados de tu biblioteca (js/almacen.js)
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    const pedida = ByBook.parametro('id');
+    this.state = { sel: ByBookDatos.SAGAS[pedida] ? pedida : 'dune' };
+  }
+  renderVals() {
+    const A = ByBookAlmacen, D = ByBookDatos, st = this.state;
+    const saga = D.SAGAS[st.sel];
+    const avance = A.progresoSaga(st.sel);
+    return {
+      sagas: Object.keys(D.SAGAS).map((id) => {
+        const p = A.progresoSaga(id);
+        return { nombre: D.SAGAS[id].nombre, autor: D.autor(D.SAGAS[id].autor).nombre, texto: p.leidos + ' de ' + p.total, pct: p.porcentaje + '%', activa: st.sel === id ? 'true' : 'false',
+          elegir: () => { this.setState({ sel: id }); history.replaceState(null, '', ByBook.urlSaga(id)); } };
+      }),
+      saga: {
+        nombre: saga.nombre, autor: D.autor(saga.autor).nombre, autorUrl: ByBook.urlAutor(saga.autor), nota: saga.nota || '',
+        pct: avance.porcentaje + '%', pctN: avance.porcentaje,
+        siguiente: avance.siguiente ? 'Has leído ' + avance.leidos + ' de ' + avance.total + '. Tu siguiente lectura: ' + D.obra(avance.siguiente).titulo + '.' : '¡Saga completada! Has leído los ' + avance.total + ' volúmenes.'
+      },
+      volumenes: saga.obras.map((id) => {
+        const leido = A.entrada(id).estado === 'leido';
+        return { o: ByBook.vistaObra(D.obra(id)), leido: leido ? 'true' : 'false', esSiguiente: avance.siguiente === id && !A.entrada(id).estado,
+          texto: leido ? '✓ Leído' : 'Marcar leído', marcar: () => { A.ponerEstado(id, 'leido'); this.forceUpdate(); } };
+      })
+    };
+  }
+}
+</script>
+
+<!-- Motor de plantillas, datos de ejemplo, tus datos guardados y piezas comunes (cabecera, pie, portada) -->
+<script src="js/dc.js"></script>
+<script src="js/datos.js"></script>
+<script src="js/almacen.js"></script>
+<script src="js/componentes.js"></script>
+</body>
+</html>

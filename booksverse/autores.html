@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ByBook · Autores</title>
+<link rel="icon" href="img/logo.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..700&amp;family=Inter:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet">
+<!-- Estilos comunes de ByBook -->
+<link rel="stylesheet" href="css/bybook.css">
+<!-- Estilos propios de esta página -->
+<style>
+.letras { display: flex; flex-wrap: wrap; gap: 2px; padding: 8px 0; border-top: 3px solid var(--gris); border-bottom: 1px solid var(--linea); }
+.letras .filtro { min-width: 36px; font-family: var(--fuente-titulos); font-size: 1.1rem; }
+.autor-fila { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; gap: 14px; align-items: center; width: 100%; padding: 12px 8px; border: 0; border-bottom: 1px solid var(--linea); background: transparent; text-align: left; }
+.autor-fila:hover { background: var(--papel); }
+.autor-fila[aria-pressed="true"] { background: var(--papel); box-shadow: inset 4px 0 0 var(--naranja); }
+.ficha-autor { position: sticky; top: 90px; animation: aparece .3s ease both; }
+.obras-autor { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 16px 12px; margin-top: 12px; }
+@media (max-width: 860px) { .ficha-autor { position: static; } }
+</style>
+</head>
+<body>
+<!-- Aquí se dibuja la página: js/dc.js la pinta a partir de la plantilla de abajo -->
+<div id="dc-app" style="display: contents"></div>
+
+<!-- ===== Plantilla y lógica de la página ===== -->
+<template data-dc-component="__root">
+<dc-import name="Nav" active="autores"></dc-import>
+
+<main id="contenido">
+<div class="contenedor">
+<section style="padding: clamp(28px, 5vw, 48px) 0 20px">
+<span class="antetitulo">Las firmas</span>
+<h1 class="titulo titulo-xl" style="margin-top: 8px">Autores</h1>
+</section>
+<div class="letras filtros" role="group" aria-label="Filtrar por inicial del apellido">
+<sc-for list="{{letras}}" as="l"><button type="button" class="filtro" onClick="{{l.elegir}}" aria-pressed="{{l.activa}}">{{l.nombre}}</button></sc-for>
+</div>
+
+<div class="dos-columnas" style="grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); padding: 24px 0 72px">
+<div role="group" aria-label="Lista de autores">
+<p class="texto-pequeno texto-suave" aria-live="polite" style="margin-bottom: 8px">{{cuenta}}</p>
+<sc-for list="{{autores}}" as="a">
+<button type="button" class="autor-fila" onClick="{{a.elegir}}" aria-pressed="{{a.activo}}"><span class="avatar tono-{{a.tono}}" aria-hidden="true">{{a.iniciales}}</span><span><span class="titulo titulo-s" style="display: block">{{a.nombre}}</span><span class="texto-mini texto-suave">{{a.origen}}</span></span><span class="texto-pequeno texto-suave">{{a.num}}</span></button>
+</sc-for>
+</div>
+
+<article class="ficha-autor bloque" aria-labelledby="nombre-autor">
+<span class="antetitulo">{{sel.origen}}</span>
+<h2 id="nombre-autor" class="titulo titulo-l" style="margin: 8px 0 12px">{{sel.nombre}}</h2>
+<p>{{sel.bio}}</p>
+<h3 class="caja-titulo" style="margin-top: 22px">Sus obras en ByBook</h3>
+<div class="obras-autor">
+<sc-for list="{{sel.obras}}" as="o"><a href="{{o.url}}" class="pila enlace-portada" style="gap: 6px" aria-label="{{o.titulo}}"><dc-import name="Portada" obra="{{o}}" tam="s"></dc-import><span class="texto-mini" style="font-weight: 600">{{o.titulo}}</span></a></sc-for>
+</div>
+<sc-if value="{{sel.wiki}}"><a href="{{sel.wiki}}" class="boton boton--contorno boton--pequeno" style="margin-top: 20px" target="_blank" rel="noopener">Biografía en Wikipedia ↗</a></sc-if>
+</article>
+</div>
+</div>
+</main>
+
+<dc-import name="Pie"></dc-import>
+</template>
+<script type="text/x-dc" data-dc-logic="__root">
+// Autores: al filtrar por inicial, la ficha pasa al primer autor visible
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    const pedido = ByBook.parametro('id');
+    this.state = { letra: 'Todos', sel: ByBookDatos.autor(pedido) ? pedido : 'herbert' };
+  }
+  renderVals() {
+    const D = ByBookDatos, st = this.state;
+    const tonos = ['albaricoque', 'turquesa', 'gris', 'naranja', 'blanco'];
+    const todos = Object.keys(D.AUTORES).map((id, i) => Object.assign({ id, tono: tonos[i % tonos.length] }, D.AUTORES[id]))
+      .sort((a, b) => a.orden.localeCompare(b.orden, 'es'));
+    const inicial = (a) => a.orden.normalize('NFD').charAt(0).toUpperCase();
+    const letras = ['Todos'].concat(Array.from(new Set(todos.map(inicial))));
+    const visibles = todos.filter((a) => st.letra === 'Todos' || inicial(a) === st.letra);
+    // Si el autor elegido no está en la lista visible, mostramos el primero que sí lo está
+    const sel = visibles.find((a) => a.id === st.sel) || visibles[0];
+    const obras = D.obrasDeAutor(sel.id);
+    return {
+      letras: letras.map((l) => ({ nombre: l, activa: st.letra === l ? 'true' : 'false', elegir: () => this.setState({ letra: l }) })),
+      cuenta: visibles.length + (visibles.length === 1 ? ' autor' : ' autores'),
+      autores: visibles.map((a) => ({
+        nombre: a.nombre, origen: a.origen, tono: a.tono,
+        iniciales: a.nombre.split(' ').filter((p) => /^[A-ZÁÉÍÓÚ]/.test(p)).map((p) => p[0]).join('').slice(0, 2),
+        num: D.obrasDeAutor(a.id).length + (D.obrasDeAutor(a.id).length === 1 ? ' obra' : ' obras'),
+        activo: a.id === sel.id ? 'true' : 'false',
+        elegir: () => { this.setState({ sel: a.id }); history.replaceState(null, '', ByBook.urlAutor(a.id)); }
+      })),
+      sel: { nombre: sel.nombre, origen: sel.origen, bio: sel.bio, wiki: sel.wiki, obras: obras.map((o) => ByBook.vistaObra(o)) }
+    };
+  }
+}
+</script>
+
+<!-- Motor de plantillas, datos de ejemplo, tus datos guardados y piezas comunes (cabecera, pie, portada) -->
+<script src="js/dc.js"></script>
+<script src="js/datos.js"></script>
+<script src="js/almacen.js"></script>
+<script src="js/componentes.js"></script>
+</body>
+</html>

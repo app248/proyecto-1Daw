@@ -1,0 +1,339 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ByBook · Entrar o crear cuenta</title>
+    <link rel="icon" href="img/logo.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..700&amp;family=Inter:wght@400;500;600;700;800;900&amp;display=swap"
+      rel="stylesheet"
+    />
+    <!-- Estilos comunes de ByBook -->
+    <link rel="stylesheet" href="css/bybook.css" />
+    <!-- Estilos propios de esta página -->
+    <style>
+      .acceso {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        min-height: calc(100vh - 67px);
+      }
+      .acceso-marca {
+        padding: clamp(28px, 5vw, 64px);
+        background: var(--papel);
+        border-right: 1px solid var(--linea);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        gap: 24px;
+      }
+      .acceso-marca img {
+        width: min(220px, 50%);
+      }
+      .acceso-marca ol {
+        margin: 0;
+        padding-left: 1.2em;
+        display: grid;
+        gap: 8px;
+      }
+      .acceso-form {
+        padding: clamp(28px, 5vw, 64px) clamp(16px, 5vw, 64px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .acceso-caja {
+        width: 100%;
+        max-width: 420px;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+      .modos {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        border-bottom: 1px solid var(--linea);
+      }
+      .modos button {
+        min-height: 48px;
+        border: 0;
+        background: transparent;
+        font-weight: 600;
+        color: var(--gris-suave);
+        position: relative;
+      }
+      .modos button[aria-pressed="true"] {
+        color: var(--gris);
+      }
+      .modos button[aria-pressed="true"]::after {
+        content: "";
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: -1px;
+        height: 3px;
+        background: var(--naranja);
+      }
+      @media (max-width: 760px) {
+        .acceso {
+          grid-template-columns: minmax(0, 1fr);
+        }
+        .acceso-marca {
+          border-right: 0;
+          border-bottom: 1px solid var(--linea);
+        }
+        .acceso-marca ol {
+          display: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Aquí se dibuja la página: js/dc.js la pinta a partir de la plantilla de abajo -->
+    <div id="dc-app" style="display: contents"></div>
+
+    <!-- ===== Plantilla y lógica de la página ===== -->
+    <template data-dc-component="__root">
+      <dc-import name="Nav" active=""></dc-import>
+
+      <main id="contenido" class="acceso">
+        <div class="acceso-marca">
+          <img src="img/logo.svg" alt="" width="220" height="128" />
+          <h1 class="titulo titulo-l">Tu diario de lectura empieza aquí.</h1>
+          <ol class="texto-suave">
+            <li>Busca una obra en el catálogo.</li>
+            <li>Márcala como «Quiero leer», «Leyendo» o «Leído».</li>
+            <li>Puntúala, escribe tu reseña y síguela en tu biblioteca.</li>
+          </ol>
+        </div>
+
+        <div class="acceso-form">
+          <div class="acceso-caja">
+            <sc-if value="{{conectado}}">
+              <div class="exito">
+                <span class="exito-icono" aria-hidden="true"
+                  ><svg
+                    width="28"
+                    height="28"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.6"
+                  >
+                    <path d="M5 12l5 5 9-10"></path></svg
+                ></span>
+                <h2 class="titulo titulo-m" role="status">{{saludo}}</h2>
+                <p class="texto-suave">
+                  Has entrado como <b>{{nombre}}</b> ({{email}}).
+                </p>
+                <div class="fila" style="justify-content: center">
+                  <a href="biblioteca.html" class="boton boton--principal"
+                    >Ir a mi biblioteca</a
+                  ><a href="explorar.html" class="boton boton--contorno"
+                    >Buscar una obra</a
+                  >
+                </div>
+                <button
+                  type="button"
+                  class="boton boton--texto boton--pequeno"
+                  onClick="{{salir}}"
+                >
+                  Cerrar sesión
+                </button>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{formulario}}">
+              <div class="modos" role="group" aria-label="Elige una opción">
+                <button
+                  type="button"
+                  onClick="{{modoEntrar}}"
+                  aria-pressed="{{esEntrar}}"
+                >
+                  Entrar
+                </button>
+                <button
+                  type="button"
+                  onClick="{{modoRegistro}}"
+                  aria-pressed="{{esRegistro}}"
+                >
+                  Crear cuenta
+                </button>
+              </div>
+              <div class="pila" style="gap: 4px">
+                <h2 class="titulo titulo-m">{{titulo}}</h2>
+                <p class="texto-suave texto-pequeno">{{subtitulo}}</p>
+              </div>
+              <form
+                class="pila"
+                style="gap: 16px"
+                onSubmit="{{enviar}}"
+                novalidate=""
+              >
+                <sc-if value="{{hayErrores}}"
+                  ><div class="alerta" role="alert">
+                    Revisa {{numErrores}} antes de continuar.
+                  </div></sc-if
+                >
+                <sc-if value="{{esRegistroB}}">
+                  <div class="campo">
+                    <label for="nombre">Nombre</label
+                    ><input
+                      id="nombre"
+                      class="entrada"
+                      type="text"
+                      autocomplete="name"
+                      value="{{v.nombre}}"
+                      onInput="{{escribirNombre}}"
+                      aria-invalid="{{inv.nombre}}"
+                      aria-describedby="nombre-error"
+                    /><span id="nombre-error" class="ayuda ayuda--error"
+                      >{{err.nombre}}</span
+                    >
+                  </div>
+                </sc-if>
+                <div class="campo">
+                  <label for="correo">Correo electrónico</label
+                  ><input
+                    id="correo"
+                    class="entrada"
+                    type="email"
+                    autocomplete="email"
+                    placeholder="nombre@correo.com"
+                    value="{{v.email}}"
+                    onInput="{{escribirEmail}}"
+                    aria-invalid="{{inv.email}}"
+                    aria-describedby="correo-error"
+                  /><span id="correo-error" class="ayuda ayuda--error"
+                    >{{err.email}}</span
+                  >
+                </div>
+                <div class="campo">
+                  <label for="clave">Contraseña</label>
+                  <div class="entrada-grupo" data-invalido="{{inv.clave}}">
+                    <input
+                      id="clave"
+                      type="{{tipoClave}}"
+                      autocomplete="{{autoClave}}"
+                      value="{{v.clave}}"
+                      onInput="{{escribirClave}}"
+                      aria-invalid="{{inv.clave}}"
+                      aria-describedby="clave-ayuda"
+                    /><button
+                      type="button"
+                      class="boton boton--texto boton--pequeno"
+                      onClick="{{verClave}}"
+                      aria-pressed="{{claveVisible}}"
+                    >
+                      {{textoVer}}
+                    </button>
+                  </div>
+                  <span id="clave-ayuda" class="ayuda {{claseClave}}"
+                    >{{ayudaClave}}</span
+                  >
+                </div>
+                <sc-if value="{{esRegistroB}}">
+                  <div class="campo">
+                    <label class="casilla"
+                      ><input
+                        type="checkbox"
+                        checked="{{v.acepto}}"
+                        onChange="{{alternarAcepto}}"
+                        aria-invalid="{{inv.acepto}}"
+                        aria-describedby="acepto-error"
+                      />Entiendo que es un prototipo y que mis datos se guardan
+                      solo en este navegador.</label
+                    ><span id="acepto-error" class="ayuda ayuda--error"
+                      >{{err.acepto}}</span
+                    >
+                  </div>
+                </sc-if>
+                <button
+                  type="submit"
+                  class="boton boton--principal boton--bloque"
+                >
+                  {{textoBoton}}
+                </button>
+              </form>
+              <p class="nota-prototipo">
+                Acceso de demostración: no hay servidor. Guardamos tu nombre y
+                correo en este navegador para personalizar la web; la contraseña
+                solo se comprueba y nunca se guarda.
+              </p>
+            </sc-if>
+          </div>
+        </div>
+      </main>
+
+      <dc-import name="Pie"></dc-import>
+    </template>
+    <script type="text/x-dc" data-dc-logic="__root">
+      // Acceso y registro (demostración). acceso.html?modo=registro abre directamente el registro.
+      class Component extends DCLogic {
+        constructor(props) {
+          super(props);
+          this.state = { modo: ByBook.parametro('modo') === 'registro' ? 'registro' : 'entrar', nombre: '', email: '', clave: '', acepto: false, ver: false, intentado: false, recienEntrado: false };
+        }
+        errores() {
+          const st = this.state, reg = st.modo === 'registro';
+          return {
+            nombre: reg && st.nombre.trim().length < 2 ? 'Escribe tu nombre (al menos 2 letras).' : '',
+            email: !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(st.email.trim()) ? 'Escribe un correo válido, por ejemplo nombre@correo.com.' : '',
+            clave: st.clave.length < 8 ? 'La contraseña debe tener al menos 8 caracteres.' : '',
+            acepto: reg && !st.acepto ? 'Marca la casilla para continuar.' : ''
+          };
+        }
+        renderVals() {
+          const A = ByBookAlmacen, st = this.state, reg = st.modo === 'registro';
+          const e = this.errores();
+          const ver = (k) => (st.intentado ? e[k] : '');
+          const num = Object.values(e).filter(Boolean).length;
+          const cuenta = A.cuenta();
+          return {
+            conectado: !!cuenta, formulario: !cuenta,
+            saludo: st.recienEntrado ? (reg ? '¡Cuenta creada!' : '¡Hola de nuevo!') : 'Ya has entrado',
+            nombre: cuenta ? cuenta.nombre : '', email: cuenta ? cuenta.email : '',
+            salir: () => { A.cerrarSesion(); this.setState({ recienEntrado: false, clave: '' }); },
+            esEntrar: reg ? 'false' : 'true', esRegistro: reg ? 'true' : 'false', esRegistroB: reg,
+            modoEntrar: () => { this.setState({ modo: 'entrar', intentado: false }); history.replaceState(null, '', 'acceso.html'); },
+            modoRegistro: () => { this.setState({ modo: 'registro', intentado: false }); history.replaceState(null, '', 'acceso.html?modo=registro'); },
+            titulo: reg ? 'Crea tu cuenta' : 'Entra en tu diario',
+            subtitulo: reg ? 'Gratis. Tu biblioteca actual se conserva.' : 'Usa el correo con el que te registraste.',
+            v: { nombre: st.nombre, email: st.email, clave: st.clave, acepto: st.acepto },
+            err: { nombre: ver('nombre'), email: ver('email'), acepto: ver('acepto') },
+            inv: { nombre: ver('nombre') ? 'true' : 'false', email: ver('email') ? 'true' : 'false', clave: ver('clave') ? 'true' : 'false', acepto: ver('acepto') ? 'true' : 'false' },
+            escribirNombre: (ev) => this.setState({ nombre: ev.target.value }),
+            escribirEmail: (ev) => this.setState({ email: ev.target.value }),
+            escribirClave: (ev) => this.setState({ clave: ev.target.value }),
+            alternarAcepto: (ev) => this.setState({ acepto: ev.target.checked }),
+            tipoClave: st.ver ? 'text' : 'password', autoClave: reg ? 'new-password' : 'current-password',
+            claveVisible: st.ver ? 'true' : 'false', textoVer: st.ver ? 'Ocultar' : 'Mostrar',
+            verClave: () => this.setState({ ver: !st.ver }),
+            ayudaClave: ver('clave') || (st.clave.length >= 8 ? '✓ Contraseña válida.' : 'Mínimo 8 caracteres.'),
+            claseClave: ver('clave') ? 'ayuda--error' : st.clave.length >= 8 ? 'ayuda--ok' : '',
+            hayErrores: st.intentado && num > 0, numErrores: num === 1 ? '1 campo' : num + ' campos',
+            textoBoton: reg ? 'Crear cuenta' : 'Entrar',
+            enviar: () => {
+              if (num > 0) {
+                this.setState({ intentado: true });
+                setTimeout(() => { const c = document.querySelector('[aria-invalid="true"]'); if (c) c.focus(); }, 30);
+                return;
+              }
+              const email = st.email.trim();
+              A.iniciarSesion(reg ? st.nombre.trim() : email.split('@')[0], email);
+              this.setState({ recienEntrado: true, clave: '' });
+            }
+          };
+        }
+      }
+    </script>
+
+    <!-- Motor de plantillas, datos de ejemplo, tus datos guardados y piezas comunes (cabecera, pie, portada) -->
+    <script src="js/dc.js"></script>
+    <script src="js/datos.js"></script>
+    <script src="js/almacen.js"></script>
+    <script src="js/componentes.js"></script>
+  </body>
+</html>

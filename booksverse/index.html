@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ByBook · Diario de lectura</title>
+<link rel="icon" href="img/logo.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..700&amp;family=Inter:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet">
+<!-- Estilos comunes de ByBook -->
+<link rel="stylesheet" href="css/bybook.css">
+<!-- Estilos propios de esta página -->
+<style>
+/* Inicio: portada de revista. Mancheta, titular + reseña destacada, estante y actividad */
+.mancheta { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 16px; padding: 10px 0; border-bottom: 1px solid var(--linea); font-size: .75rem; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--gris-suave); }
+.portada-revista { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: clamp(28px, 5vw, 64px); padding: clamp(32px, 5vw, 56px) 0; align-items: center; }
+.portada-revista h1 { font-size: clamp(2.3rem, 5.6vw, 4.2rem); line-height: 1.02; letter-spacing: -.03em; }
+.destacada { display: grid; grid-template-columns: 130px minmax(0, 1fr); gap: 20px; padding: 22px; background: var(--papel); border-top: 6px solid var(--naranja); border-radius: 0 0 var(--radio) var(--radio); }
+.destacada blockquote { margin: 0; font-family: var(--fuente-titulos); font-size: clamp(1.15rem, 2vw, 1.45rem); font-style: italic; line-height: 1.35; }
+.puesto { font-family: var(--fuente-titulos); font-size: 1.4rem; font-weight: 600; color: var(--naranja-tinta); }
+.actividad li { align-items: flex-start; }
+.actividad .quien { font-weight: 700; }
+.indice-formatos a { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--linea); }
+.indice-formatos a:first-child { border-top: 1px solid var(--linea); }
+.indice-formatos b { font-family: var(--fuente-titulos); font-size: 1.3rem; }
+@media (max-width: 860px) { .portada-revista { grid-template-columns: 1fr; } }
+@media (max-width: 420px) { .destacada { grid-template-columns: 90px minmax(0, 1fr); padding: 16px; } }
+</style>
+</head>
+<body>
+<!-- Aquí se dibuja la página: js/dc.js la pinta a partir de la plantilla de abajo -->
+<div id="dc-app" style="display: contents"></div>
+
+<!-- ===== Plantilla y lógica de la página ===== -->
+<template data-dc-component="__root">
+<dc-import name="Nav" active="inicio"></dc-import>
+
+<main id="contenido">
+<div class="contenedor">
+<div class="mancheta"><span>Nº 11 · Noviembre 2026</span><span>Edición de prueba · lectores y actividad de ejemplo</span></div>
+
+<section class="portada-revista" aria-labelledby="titular">
+<div class="pila" style="gap: 20px">
+<span class="antetitulo">Tu diario de lectura</span>
+<h1 id="titular">Apunta lo que lees, puntúalo y descubre qué <span class="cursiva">leen los demás</span>.</h1>
+<p class="entradilla">Libros, cómics, manga, manhwa y webtoons en un mismo diario. Guarda tu progreso, escribe reseñas y sigue a otros lectores.</p>
+<div class="fila">
+<a href="{{ctaUrl}}" class="boton boton--principal">{{ctaTexto}}</a>
+<a href="explorar.html" class="boton boton--contorno">Explorar el catálogo</a>
+</div>
+</div>
+
+<article class="destacada" aria-labelledby="titulo-destacada">
+<a href="{{destacada.o.url}}" class="enlace-portada" aria-label="{{destacada.o.titulo}}"><dc-import name="Portada" obra="{{destacada.o}}" tam="s"></dc-import></a>
+<div class="pila" style="gap: 10px">
+<span class="antetitulo">Reseña de la semana <span class="ejemplo">Ejemplo</span></span>
+<h2 id="titulo-destacada" class="titulo titulo-s"><a href="{{destacada.o.url}}">{{destacada.o.titulo}}</a></h2>
+<blockquote>«{{destacada.resena}}»</blockquote>
+<div class="fila texto-pequeno"><a href="{{destacada.perfil}}" class="fila" style="gap: 8px"><span class="avatar tono-{{destacada.tono}}" aria-hidden="true">{{destacada.iniciales}}</span><b>{{destacada.nombre}}</b></a><span class="estrellas" aria-label="{{destacada.notaTexto}}">{{destacada.estrellas}}</span></div>
+</div>
+</article>
+</section>
+</div>
+
+<section class="seccion" style="padding-top: 0">
+<div class="contenedor">
+<div class="cabecera-seccion">
+<h2>El estante de la semana</h2>
+<div class="filtros" role="group" aria-label="Filtrar el estante por formato">
+<sc-for list="{{formatosEstante}}" as="f"><button type="button" class="filtro" onClick="{{f.elegir}}" aria-pressed="{{f.activo}}">{{f.nombre}}</button></sc-for>
+</div>
+</div>
+<p class="texto-pequeno texto-suave" style="margin: -12px 0 18px">Las obras más guardadas por los lectores de ejemplo.</p>
+<ol class="estanteria estanteria--horizontal" style="list-style: none; margin: 0; padding: 0 0 12px">
+<sc-for list="{{estante}}" as="b">
+<li class="obra">
+<a href="{{b.url}}" class="enlace-portada" aria-label="{{b.puesto}}. {{b.etiquetaAccesible}}"><dc-import name="Portada" obra="{{b}}"></dc-import></a>
+<div class="obra-info">
+<span class="fila" style="gap: 8px; flex-wrap: nowrap"><span class="puesto" aria-hidden="true">{{b.puesto}}</span><a href="{{b.url}}" class="obra-titulo">{{b.titulo}}</a></span>
+<span class="obra-meta"><span>{{b.formatoNombre}}</span><sc-if value="{{b.media}}"><span><span class="estrellas" aria-hidden="true">★</span> {{b.media}}</span></sc-if><span>{{b.lectores}}</span></span>
+</div>
+</li>
+</sc-for>
+</ol>
+</div>
+</section>
+
+<section class="seccion seccion--papel">
+<div class="contenedor dos-columnas">
+<div>
+<div class="cabecera-seccion"><h2>Lo que se está leyendo</h2><a href="lectores.html" class="enlace texto-pequeno">Ver lectores</a></div>
+<ul class="lista actividad">
+<sc-for list="{{actividad}}" as="a">
+<li>
+<a href="{{a.perfil}}" class="avatar tono-{{a.tono}}" aria-label="Perfil de {{a.nombre}}">{{a.iniciales}}</a>
+<div style="flex: 1; min-width: 0" class="pila">
+<p style="gap: 0"><a href="{{a.perfil}}" class="quien">{{a.nombre}}</a> {{a.verbo}} <a href="{{a.o.url}}" class="enlace">{{a.o.titulo}}</a><sc-if value="{{a.nota}}"> <span class="estrellas" aria-label="{{a.notaTexto}}">{{a.estrellas}}</span></sc-if></p>
+<sc-if value="{{a.resena}}"><p class="texto-pequeno texto-suave" style="font-style: italic">«{{a.resena}}»</p></sc-if>
+<span class="texto-mini texto-suave">{{a.fecha}} · {{a.o.formatoNombre}}<sc-if value="{{a.esEjemplo}}"> · <span class="ejemplo">Ejemplo</span></sc-if><sc-if value="{{a.esMia}}"> · <span class="etiqueta etiqueta--leyendo">Tú</span></sc-if></span>
+</div>
+<a href="{{a.o.url}}" class="enlace-portada" style="width: 44px; flex: none" aria-hidden="true" tabindex="-1"><dc-import name="Portada" obra="{{a.o}}" tam="xs"></dc-import></a>
+</li>
+</sc-for>
+</ul>
+</div>
+
+<aside class="pila" style="gap: 32px">
+<section>
+<div class="cabecera-seccion"><h2>Tu diario</h2></div>
+<sc-if value="{{sinDiario}}">
+<p class="texto-suave">Todavía no has guardado nada. Busca una obra, márcala como «Leyendo» y aparecerá aquí.</p>
+<a href="explorar.html" class="enlace" style="display: inline-block; margin-top: 8px">Empezar por el catálogo</a>
+</sc-if>
+<ul class="lista">
+<sc-for list="{{miDiario}}" as="e"><li><a href="{{e.o.url}}" class="enlace-portada" style="width: 40px; flex: none" aria-hidden="true" tabindex="-1"><dc-import name="Portada" obra="{{e.o}}" tam="xs"></dc-import></a><div style="flex: 1; min-width: 0"><a href="{{e.o.url}}" class="obra-titulo" style="font-size: .95rem">{{e.o.titulo}}</a><div class="texto-mini texto-suave">{{e.texto}}</div></div></li></sc-for>
+</ul>
+<sc-if value="{{hayDiario}}"><a href="biblioteca.html" class="enlace texto-pequeno" style="display: inline-block; margin-top: 10px">Abrir mi biblioteca</a></sc-if>
+</section>
+<section>
+<div class="cabecera-seccion"><h2>Cinco formatos</h2></div>
+<nav class="indice-formatos" aria-label="Formatos">
+<sc-for list="{{indice}}" as="f"><a href="explorar.html?formato={{f.id}}"><b>{{f.nombre}}</b><span class="texto-pequeno texto-suave">{{f.num}} obras · se cuenta en {{f.unidades}}</span></a></sc-for>
+</nav>
+</section>
+</aside>
+</div>
+</section>
+</main>
+
+<dc-import name="Pie"></dc-import>
+</template>
+<script type="text/x-dc" data-dc-logic="__root">
+// Inicio: portada editorial con la reseña destacada, el estante de la semana y la actividad
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { formato: 'todos' }; }
+  renderVals() {
+    const A = ByBookAlmacen, D = ByBookDatos, st = this.state;
+    const actividadEjemplo = D.actividadDeEjemplo();
+
+    // Reseña destacada: la reseña de 5 estrellas más reciente de los lectores de ejemplo
+    const r = actividadEjemplo.find((x) => x.resena && x.nota === 5);
+    const destacada = { o: ByBook.vistaObra(D.obra(r.obra)), resena: r.resena, nombre: r.lector.nombre, iniciales: r.lector.iniciales, tono: r.lector.tono, perfil: ByBook.urlPerfil(r.lector.usuario), estrellas: ByBook.estrellas(r.nota), notaTexto: ByBook.textoNota(r.nota) };
+
+    // Estante: obras ordenadas por cuántos lectores de ejemplo las tienen
+    const cuenta = {};
+    actividadEjemplo.forEach((x) => { cuenta[x.obra] = (cuenta[x.obra] || 0) + 1; });
+    const estante = Object.keys(cuenta)
+      .map((id) => D.obra(id))
+      .filter((o) => st.formato === 'todos' || o.formato === st.formato)
+      .sort((a, b) => cuenta[b.id] - cuenta[a.id] || a.titulo.localeCompare(b.titulo, 'es'))
+      .slice(0, 10)
+      .map((o, i) => Object.assign(ByBook.vistaObra(o), { puesto: i + 1, lectores: cuenta[o.id] + (cuenta[o.id] === 1 ? ' lector' : ' lectores') }));
+
+    // Actividad: tus 3 últimos movimientos + la actividad de ejemplo
+    const verbo = (estado, progreso, f) => estado === 'leido' ? 'terminó' : estado === 'leyendo' ? 'va por el ' + f.unidad + ' ' + progreso + ' de' : estado === 'quiero' ? 'quiere leer' : 'guardó';
+    const mias = A.misObras().slice(0, 3).map((e) => ({
+      esMia: true, esEjemplo: false, nombre: 'Tú', iniciales: A.nombre().slice(0, 2).toUpperCase(), tono: 'albaricoque', perfil: 'perfil.html?u=yo',
+      o: ByBook.vistaObra(e.obra), verbo: e.resena ? 'reseñó' : verbo(e.estado, e.progreso, D.FORMATOS[e.obra.formato]),
+      nota: e.nota, estrellas: ByBook.estrellas(e.nota), notaTexto: ByBook.textoNota(e.nota), resena: e.resena, fecha: ByBook.fecha(e.actualizado)
+    }));
+    const ejemplos = actividadEjemplo.slice(0, 8).map((x) => ({
+      esMia: false, esEjemplo: true, nombre: x.lector.nombre, iniciales: x.lector.iniciales, tono: x.lector.tono, perfil: ByBook.urlPerfil(x.lector.usuario),
+      o: ByBook.vistaObra(D.obra(x.obra)), verbo: verbo(x.estado, x.progreso, D.FORMATOS[D.obra(x.obra).formato]),
+      nota: x.nota, estrellas: ByBook.estrellas(x.nota), notaTexto: ByBook.textoNota(x.nota), resena: x.resena, fecha: ByBook.fecha(x.fecha)
+    }));
+
+    const miDiario = A.misObras().filter((e) => e.estado === 'leyendo' || e.estado === 'quiero').slice(0, 4).map((e) => {
+      const f = D.FORMATOS[e.obra.formato];
+      return { o: ByBook.vistaObra(e.obra), texto: e.estado === 'leyendo' ? 'Leyendo · ' + f.unidad + ' ' + e.progreso + (e.obra.total ? ' de ' + e.obra.total : '') : 'Pendiente' };
+    });
+    const formatos = [['todos', 'Todo']].concat(Object.keys(D.FORMATOS).map((k) => [k, D.FORMATOS[k].plural]));
+    return {
+      ctaUrl: A.cuenta() ? 'biblioteca.html' : 'acceso.html?modo=registro',
+      ctaTexto: A.cuenta() ? 'Abrir mi diario' : 'Crear mi cuenta',
+      destacada,
+      formatosEstante: formatos.map((f) => ({ nombre: f[1], activo: st.formato === f[0] ? 'true' : 'false', elegir: () => this.setState({ formato: f[0] }) })),
+      estante,
+      actividad: mias.concat(ejemplos),
+      miDiario, sinDiario: A.misObras().length === 0, hayDiario: A.misObras().length > 0,
+      indice: Object.keys(D.FORMATOS).map((k) => ({ id: k, nombre: D.FORMATOS[k].plural, unidades: D.FORMATOS[k].unidades, num: D.listaObras().filter((o) => o.formato === k).length }))
+    };
+  }
+}
+</script>
+
+<!-- Motor de plantillas, datos de ejemplo, tus datos guardados y piezas comunes (cabecera, pie, portada) -->
+<script src="js/dc.js"></script>
+<script src="js/datos.js"></script>
+<script src="js/almacen.js"></script>
+<script src="js/componentes.js"></script>
+</body>
+</html>

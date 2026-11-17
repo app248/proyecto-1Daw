@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ByBook · Perfil de lector</title>
+<link rel="icon" href="img/logo.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..700&amp;family=Inter:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet">
+<!-- Estilos comunes de ByBook -->
+<link rel="stylesheet" href="css/bybook.css">
+<!-- Estilos propios de esta página -->
+<style>
+.perfil-cabecera { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 18px 28px; align-items: center; padding: clamp(28px, 5vw, 48px) 0 24px; border-bottom: 3px solid var(--gris); }
+.perfil-cabecera .resumen { display: flex; flex-wrap: wrap; gap: 4px 18px; font-size: .92rem; }
+.perfil-cabecera .resumen b { font-family: var(--fuente-titulos); font-size: 1.15rem; }
+.favoritas { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; max-width: 640px; }
+.boton-seguir[data-estado="siguiendo"] { background: var(--gris); color: var(--blanco); }
+.boton-seguir[data-estado="pendiente"] { background: var(--crema); border-color: var(--naranja-tinta); color: var(--gris); }
+.resena-perfil { display: grid; grid-template-columns: 70px minmax(0, 1fr); gap: 16px; padding: 18px 0; border-bottom: 1px solid var(--linea); }
+@media (max-width: 700px) {
+  .perfil-cabecera { grid-template-columns: auto minmax(0, 1fr); }
+  .perfil-cabecera .acciones-perfil { grid-column: 1 / -1; }
+  .favoritas { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+}
+</style>
+</head>
+<body>
+<!-- Aquí se dibuja la página: js/dc.js la pinta a partir de la plantilla de abajo -->
+<div id="dc-app" style="display: contents"></div>
+
+<!-- ===== Plantilla y lógica de la página ===== -->
+<template data-dc-component="__root">
+<dc-import name="Nav" active="{{navActivo}}"></dc-import>
+
+<main id="contenido">
+<sc-if value="{{noExiste}}">
+<div class="contenedor seccion">
+<div class="vacio vacio--centro">
+<img src="img/logo.svg" alt="">
+<h1 class="titulo titulo-l">Este lector no existe</h1>
+<p class="texto-suave">No hay ningún perfil con el usuario «{{usuarioPedido}}».</p>
+<a href="lectores.html" class="boton boton--principal">Ver lectores</a>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{existe}}">
+<div class="contenedor">
+<ol class="migas" aria-label="Ruta"><li><a href="lectores.html">Lectores</a></li><li><span aria-current="page">{{p.nombre}}</span></li></ol>
+<section class="perfil-cabecera" aria-labelledby="nombre-perfil">
+<span class="avatar avatar--grande tono-{{p.tono}}" aria-hidden="true">{{p.iniciales}}</span>
+<div class="pila" style="gap: 6px">
+<div class="fila" style="gap: 6px 12px">
+<h1 id="nombre-perfil" class="titulo titulo-l">{{p.nombre}}</h1>
+<span class="texto-suave">@{{p.usuario}}</span>
+<sc-if value="{{esEjemplo}}"><span class="ejemplo">Perfil de ejemplo</span></sc-if>
+<sc-if value="{{esMio}}"><span class="etiqueta etiqueta--leyendo">Tu perfil</span></sc-if>
+</div>
+<p class="texto-suave" style="max-width: 560px">{{p.bio}}</p>
+<div class="resumen"><span><b>{{n.leido}}</b> leídas</span><span><b>{{n.leyendo}}</b> leyendo</span><span><b>{{n.quiero}}</b> pendientes</span><span><b>{{n.resenas}}</b> reseñas</span><span>{{privacidadTexto}}</span><sc-if value="{{teSigue}}"><span>· Te sigue</span></sc-if></div>
+</div>
+<div class="fila acciones-perfil">
+<sc-if value="{{esEjemplo}}">
+<button type="button" class="boton boton--contorno boton-seguir" data-estado="{{seguir.estado}}" onClick="{{seguir.accion}}" aria-pressed="{{seguir.pulsado}}">{{seguir.texto}}</button>
+<button type="button" class="boton boton--principal" onClick="{{abrirRecomendar}}">Recomendarle algo</button>
+</sc-if>
+<sc-if value="{{esMio}}"><a href="biblioteca.html" class="boton boton--principal">Abrir mi biblioteca</a><a href="{{cuentaUrl}}" class="boton boton--texto">{{cuentaTexto}}</a></sc-if>
+</div>
+</section>
+<sc-if value="{{seguir.pendiente}}"><p class="nota-prototipo" style="margin-top: 16px" role="status">Solicitud pendiente: {{p.nombre}} tiene que aprobarla. En esta demostración nadie puede aprobarla, así que se queda pendiente; puedes cancelarla.</p></sc-if>
+</div>
+
+<sc-if value="{{oculto}}">
+<div class="contenedor seccion">
+<div class="vacio vacio--centro">
+<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 11h14v10H5zM8 11V7a4 4 0 0 1 8 0v4"></path></svg>
+<h2 class="titulo titulo-m">Perfil privado</h2>
+<p class="texto-suave">Solo sus seguidores aprobados ven sus lecturas y reseñas.</p>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{visible}}">
+<div class="contenedor dos-columnas" style="padding-top: 32px; padding-bottom: 72px">
+<div class="pila" style="gap: 40px">
+<section>
+<div class="cabecera-seccion"><h2>Favoritas</h2></div>
+<sc-if value="{{sinFavoritas}}"><p class="texto-suave">{{vacioFavoritas}}</p></sc-if>
+<div class="favoritas">
+<sc-for list="{{favoritas}}" as="o"><a href="{{o.url}}" class="enlace-portada" aria-label="{{o.etiquetaAccesible}}"><dc-import name="Portada" obra="{{o}}"></dc-import></a></sc-for>
+</div>
+</section>
+
+<section>
+<div class="cabecera-seccion"><h2>Reseñas</h2><span class="texto-pequeno texto-suave">{{n.resenas}}</span></div>
+<sc-if value="{{sinResenas}}"><p class="texto-suave">{{vacioResenas}}</p></sc-if>
+<sc-for list="{{resenas}}" as="r">
+<article class="resena-perfil">
+<a href="{{r.o.url}}" class="enlace-portada" aria-label="{{r.o.titulo}}"><dc-import name="Portada" obra="{{r.o}}" tam="s"></dc-import></a>
+<div class="pila" style="gap: 6px">
+<div class="fila" style="gap: 4px 12px"><a href="{{r.o.url}}" class="obra-titulo">{{r.o.titulo}}</a><sc-if value="{{r.nota}}"><span class="estrellas" aria-label="{{r.notaTexto}}">{{r.estrellas}}</span></sc-if><span class="texto-pequeno texto-suave">{{r.fecha}}</span></div>
+<p class="resena-texto">{{r.resena}}</p>
+<sc-if value="{{esMio}}"><a href="{{r.editar}}" class="enlace texto-pequeno" style="align-self: flex-start">Editar o borrar</a></sc-if>
+</div>
+</article>
+</sc-for>
+</section>
+</div>
+
+<aside class="pila" style="gap: 32px">
+<section>
+<div class="cabecera-seccion"><h2>Leyendo ahora</h2></div>
+<sc-if value="{{sinLeyendo}}"><p class="texto-suave texto-pequeno">Nada en curso.</p></sc-if>
+<ul class="lista">
+<sc-for list="{{leyendo}}" as="e">
+<li><a href="{{e.o.url}}" class="enlace-portada" style="width: 46px; flex: none" aria-label="{{e.o.titulo}}"><dc-import name="Portada" obra="{{e.o}}" tam="xs"></dc-import></a>
+<div style="flex: 1; min-width: 0"><a href="{{e.o.url}}" class="obra-titulo" style="font-size: .98rem">{{e.o.titulo}}</a><div class="texto-mini texto-suave">{{e.texto}}</div><sc-if value="{{e.o.total}}"><div class="progreso" style="margin-top: 6px"><span style="width: {{e.pct}}"></span></div></sc-if></div></li>
+</sc-for>
+</ul>
+</section>
+<section>
+<div class="cabecera-seccion"><h2>Diario</h2></div>
+<sc-if value="{{sinDiario}}"><p class="texto-suave texto-pequeno">Sin actividad todavía.</p></sc-if>
+<ul class="lista">
+<sc-for list="{{diario}}" as="e">
+<li><span class="diario-fecha"><b>{{e.dia}}</b><span>{{e.mes}}</span></span><div style="flex: 1; min-width: 0"><a href="{{e.o.url}}" class="obra-titulo" style="font-size: .98rem">{{e.o.titulo}}</a><div class="texto-mini texto-suave">{{e.estado}} <span class="estrellas" aria-label="{{e.notaTexto}}">{{e.estrellas}}</span></div></div></li>
+</sc-for>
+</ul>
+</section>
+</aside>
+</div>
+</sc-if>
+</sc-if>
+</main>
+
+<dc-import name="Pie"></dc-import>
+
+<sc-if value="{{recomendarAbierto}}">
+<div class="fondo-modal" onClick="{{fondo}}">
+<div class="modal" role="dialog" aria-modal="true" aria-labelledby="titulo-modal" tabindex="-1">
+<div class="modal-cabecera">
+<h2 id="titulo-modal" class="titulo titulo-m">{{tituloModal}}</h2>
+<button type="button" class="boton-icono boton-icono--borde" data-cerrar="" onClick="{{cerrarRecomendar}}" aria-label="Cerrar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg></button>
+</div>
+<sc-if value="{{noEnviado}}">
+<div class="campo"><label for="obra-recomendada">¿Qué obra le recomiendas?</label>
+<select id="obra-recomendada" class="entrada" style="width: 100%" value="{{elegida}}" onChange="{{elegir}}" data-foco=""><sc-for list="{{opciones}}" as="op"><option value="{{op.id}}">{{op.titulo}} · {{op.formatoNombre}}</option></sc-for></select></div>
+<button type="button" class="boton boton--principal boton--bloque" onClick="{{enviar}}">Enviar a @{{p.usuario}}</button>
+<p class="texto-mini texto-suave">Demostración: {{p.nombre}} es un perfil de ejemplo y la recomendación no sale de tu navegador.</p>
+</sc-if>
+<sc-if value="{{enviado}}">
+<div class="exito"><span class="exito-icono" aria-hidden="true"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><path d="M5 12l5 5 9-10"></path></svg></span><p role="status"><b>¡Enviado!</b> Has recomendado «{{tituloElegida}}» a {{p.nombre}} (simulado).</p><button type="button" class="boton boton--principal" onClick="{{cerrarRecomendar}}">Volver al perfil</button></div>
+</sc-if>
+</div>
+</div>
+</sc-if>
+</template>
+<script type="text/x-dc" data-dc-logic="__root">
+// Perfil. perfil.html?u=lucia.lee muestra a un lector de ejemplo; perfil.html?u=yo (o sin u) muestra el tuyo.
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.usuario = ByBook.parametro('u') || 'yo';
+    this.state = { recomendar: false, enviado: false, elegida: 'dune' };
+  }
+  componentDidMount() {
+    const l = ByBookDatos.lector(this.usuario);
+    document.title = 'ByBook · ' + (this.usuario === 'yo' ? 'Mi perfil' : l ? 'Perfil de ' + l.nombre : 'Lector no encontrado');
+  }
+  renderVals() {
+    const A = ByBookAlmacen, D = ByBookDatos, st = this.state;
+    const esMio = this.usuario === 'yo';
+    const lector = esMio ? null : D.lector(this.usuario);
+    if (!esMio && !lector) return { noExiste: true, existe: false, usuarioPedido: this.usuario, navActivo: 'lectores', recomendarAbierto: false, seguir: {} };
+
+    // Unificamos tus datos y los de un lector de ejemplo en la misma forma
+    let lecturas, p;
+    if (esMio) {
+      const cuenta = A.cuenta();
+      p = { nombre: A.nombre(), usuario: cuenta ? cuenta.email.split('@')[0] : 'invitado', iniciales: A.nombre().slice(0, 2).toUpperCase(), tono: 'albaricoque', bio: cuenta ? 'Tu diario de lectura en ByBook.' : 'Estás como invitado. Tus datos se guardan en este navegador.', publico: A.esPublico() };
+      lecturas = A.misObras().map((e) => ({ obra: e.id, estado: e.estado, nota: e.nota, progreso: e.progreso, fecha: (e.actualizado || '').slice(0, 10), favorito: e.favorito, resena: e.resena, fechaResena: e.fechaResena }));
+    } else {
+      p = lector;
+      lecturas = lector.lecturas;
+    }
+    const seguimiento = esMio ? null : A.seguimiento(lector.usuario);
+    const visible = esMio || lector.publico || seguimiento === 'siguiendo';
+    const vista = (r) => Object.assign({}, r, { o: ByBook.vistaObra(D.obra(r.obra)) });
+    const conObra = lecturas.filter((r) => D.obra(r.obra)).map(vista);
+    const f = (r) => D.FORMATOS[r.o.formato];
+    const partesFecha = (iso) => ByBook.fecha(iso).split(' ');
+
+    return {
+      noExiste: false, existe: true, esMio, esEjemplo: !esMio, navActivo: esMio ? '' : 'lectores',
+      usuarioPedido: this.usuario, p,
+      cuentaUrl: A.cuenta() ? 'acceso.html' : 'acceso.html?modo=registro',
+      cuentaTexto: A.cuenta() ? 'Cambiar de cuenta' : 'Crear cuenta de demostración',
+      privacidadTexto: p.publico ? '· Perfil público' : '· Perfil privado',
+      teSigue: !esMio && lector.teSigue,
+      n: {
+        leido: conObra.filter((r) => r.estado === 'leido').length, leyendo: conObra.filter((r) => r.estado === 'leyendo').length,
+        quiero: conObra.filter((r) => r.estado === 'quiero').length, resenas: conObra.filter((r) => r.resena).length
+      },
+      // Seguir: perfil público → "Siguiendo" al momento; privado → "Solicitud pendiente"
+      seguir: esMio ? {} : {
+        estado: seguimiento || 'ninguno', pulsado: seguimiento ? 'true' : 'false', pendiente: seguimiento === 'pendiente',
+        texto: seguimiento === 'siguiendo' ? 'Siguiendo ✓' : seguimiento === 'pendiente' ? 'Solicitud pendiente · Cancelar' : (lector.publico ? 'Seguir' : 'Solicitar seguir'),
+        accion: () => { A.alternarSeguir(lector.usuario); this.forceUpdate(); }
+      },
+      oculto: !visible, visible,
+      favoritas: conObra.filter((r) => r.favorito).slice(0, 4).map((r) => r.o),
+      sinFavoritas: !conObra.some((r) => r.favorito),
+      vacioFavoritas: esMio ? 'Marca obras como favoritas desde su ficha y aparecerán aquí.' : 'Todavía no tiene favoritas.',
+      resenas: conObra.filter((r) => r.resena).map((r) => ({
+        o: r.o, nota: r.nota, estrellas: ByBook.estrellas(r.nota), notaTexto: ByBook.textoNota(r.nota),
+        resena: r.resena, fecha: ByBook.fecha(r.fechaResena || r.fecha), editar: r.o.url + '#resenas'
+      })),
+      sinResenas: !conObra.some((r) => r.resena),
+      vacioResenas: esMio ? 'Escribe una reseña desde la ficha de una obra y aparecerá aquí.' : 'Todavía no ha escrito reseñas.',
+      leyendo: conObra.filter((r) => r.estado === 'leyendo').map((r) => ({
+        o: r.o, pct: r.o.total ? Math.round(r.progreso / r.o.total * 100) + '%' : '0%',
+        texto: f(r).unidad.charAt(0).toUpperCase() + f(r).unidad.slice(1) + ' ' + r.progreso + (r.o.total ? ' de ' + r.o.total : '')
+      })),
+      sinLeyendo: !conObra.some((r) => r.estado === 'leyendo'),
+      diario: conObra.slice().sort((a, b) => b.fecha.localeCompare(a.fecha)).slice(0, 8).map((r) => ({
+        o: r.o, dia: partesFecha(r.fecha)[0], mes: partesFecha(r.fecha)[1],
+        estado: r.estado ? A.ESTADOS[r.estado] : 'Favorita', estrellas: ByBook.estrellas(r.nota), notaTexto: ByBook.textoNota(r.nota)
+      })),
+      sinDiario: conObra.length === 0,
+
+      // Recomendar (simulado)
+      recomendarAbierto: st.recomendar,
+      abrirRecomendar: () => ByBook.abrirDialogo(() => this.setState({ recomendar: true, enviado: false })),
+      cerrarRecomendar: () => ByBook.cerrarDialogo(() => this.setState({ recomendar: false })),
+      fondo: (e) => { if (e.target === e.currentTarget) ByBook.cerrarDialogo(() => this.setState({ recomendar: false })); },
+      tituloModal: st.enviado ? '¡Enviado!' : 'Recomendar a ' + p.nombre,
+      noEnviado: !st.enviado, enviado: st.enviado,
+      opciones: D.listaObras().filter((o) => !o.volumen || o.volumen === 1).map((o) => ByBook.vistaObra(o)).sort((a, b) => a.titulo.localeCompare(b.titulo, 'es')),
+      elegida: st.elegida,
+      tituloElegida: (D.obra(st.elegida) || {}).titulo,
+      elegir: (e) => this.setState({ elegida: e.target.value }),
+      enviar: () => {
+        A.enviarRecomendacion(st.elegida, p.usuario);
+        this.setState({ enviado: true });
+        setTimeout(() => { const b = document.querySelector('.modal .exito .boton'); if (b) b.focus(); }, 30);
+      }
+    };
+  }
+}
+</script>
+
+<!-- Motor de plantillas, datos de ejemplo, tus datos guardados y piezas comunes (cabecera, pie, portada) -->
+<script src="js/dc.js"></script>
+<script src="js/datos.js"></script>
+<script src="js/almacen.js"></script>
+<script src="js/componentes.js"></script>
+</body>
+</html>

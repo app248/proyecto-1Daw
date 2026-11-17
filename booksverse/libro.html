@@ -1,0 +1,398 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ByBook · Ficha de la obra</title>
+<link rel="icon" href="img/logo.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..700&amp;family=Inter:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet">
+<!-- Estilos comunes de ByBook -->
+<link rel="stylesheet" href="css/bybook.css">
+<!-- Estilos propios de esta página -->
+<style>
+/* Ficha: la portada y las acciones de lectura mandan; lo secundario va abajo */
+.ficha { display: grid; grid-template-columns: minmax(180px, 280px) minmax(0, 1fr); gap: clamp(24px, 4vw, 56px); padding: 20px 0 40px; align-items: start; }
+.ficha-portada { position: sticky; top: 90px; }
+.ficha-portada .portada { box-shadow: inset 6px 0 0 rgba(0,0,0,.1), 0 18px 40px rgba(59,59,59,.22); }
+.ficha-datos { display: flex; flex-direction: column; gap: 14px; }
+.ficha-autor { font-size: 1.15rem; }
+.media { display: flex; align-items: baseline; gap: 10px; }
+.media b { font-family: var(--fuente-titulos); font-size: 2rem; line-height: 1; }
+.panel-lectura { display: grid; gap: 18px; margin-top: 8px; padding: 20px; border: 1.5px solid var(--gris); border-radius: var(--radio); }
+.panel-lectura .fila-accion { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 16px; padding-top: 16px; border-top: 1px solid var(--linea); }
+.boton-fav[aria-pressed="true"] { background: var(--naranja-tinta); border-color: var(--naranja-tinta); color: var(--blanco); }
+.boton-fav[aria-pressed="true"] svg { fill: currentColor; }
+.sinopsis { font-family: var(--fuente-titulos); font-size: clamp(1.15rem, 2vw, 1.35rem); line-height: 1.55; max-width: 720px; }
+.volumenes { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 18px 14px; }
+.volumenes li { display: flex; flex-direction: column; gap: 8px; }
+.volumenes li[data-actual="true"] .portada { outline: 3px solid var(--naranja); outline-offset: 3px; }
+.secundario { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 28px; }
+.tienda { display: flex; justify-content: space-between; align-items: center; gap: 12px; min-height: 52px; border-bottom: 1px solid var(--linea); font-weight: 600; }
+.tienda small { display: block; font-weight: 400; color: var(--gris-suave); }
+@media (max-width: 700px) {
+  .ficha { grid-template-columns: 1fr; }
+  .ficha-portada { position: static; width: min(220px, 62%); }
+}
+</style>
+</head>
+<body>
+<!-- Aquí se dibuja la página: js/dc.js la pinta a partir de la plantilla de abajo -->
+<div id="dc-app" style="display: contents"></div>
+
+<!-- ===== Plantilla y lógica de la página ===== -->
+<template data-dc-component="__root">
+<dc-import name="Nav" active="catalogo"></dc-import>
+
+<main id="contenido">
+<sc-if value="{{noExiste}}">
+<div class="contenedor seccion">
+<div class="vacio vacio--centro">
+<img src="img/logo.svg" alt="">
+<h1 class="titulo titulo-l">No encontramos esa obra</h1>
+<p class="texto-suave">{{motivo}}</p>
+<div class="fila"><a href="explorar.html" class="boton boton--principal">Ir al catálogo</a><a href="index.html" class="boton boton--contorno">Volver al inicio</a></div>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{existe}}">
+<div class="contenedor">
+<ol class="migas" aria-label="Ruta"><li><a href="index.html">Inicio</a></li><li><a href="explorar.html">Catálogo</a></li><li><a href="explorar.html?formato={{o.formato}}">{{o.formatoNombre}}</a></li><li><span aria-current="page">{{o.titulo}}</span></li></ol>
+
+<section class="ficha" aria-labelledby="titulo-obra">
+<div class="ficha-portada"><dc-import name="Portada" obra="{{o}}" tam="l"></dc-import></div>
+
+<div class="ficha-datos">
+<span class="antetitulo">{{o.formatoNombre}} · {{o.genero}} · {{o.anio}}</span>
+<h1 id="titulo-obra" class="titulo titulo-xl">{{o.titulo}}</h1>
+<p class="ficha-autor">de <a href="{{o.autorUrl}}" class="enlace">{{o.autorNombre}}</a></p>
+<div class="fila texto-pequeno texto-suave" style="gap: 6px 18px">
+<sc-if value="{{o.saga}}"><span><a href="{{sagaUrl}}" class="enlace">{{o.sagaNombre}}</a> · volumen {{o.volumen}} de {{sagaTotal}}</span></sc-if>
+<span>{{extension}}</span>
+</div>
+<div class="media">
+<sc-if value="{{o.media}}"><b>{{o.media}}</b><span class="estrellas" aria-hidden="true">★</span><span class="texto-pequeno texto-suave">nota media · {{numValoraciones}}</span></sc-if>
+<sc-if value="{{sinMedia}}"><span class="texto-pequeno texto-suave">Todavía nadie la ha puntuado.</span></sc-if>
+</div>
+
+<!-- Acciones de lectura: estado, favorito, nota, progreso y reseña son datos independientes -->
+<div class="panel-lectura" aria-label="Tu lectura">
+<div class="pila" style="gap: 8px">
+<span class="etiqueta-campo" id="estado-etiqueta">Tu estado de lectura</span>
+<div class="estados" role="group" aria-labelledby="estado-etiqueta">
+<sc-for list="{{estados}}" as="e"><button type="button" onClick="{{e.elegir}}" aria-pressed="{{e.activo}}">{{e.nombre}}</button></sc-for>
+</div>
+</div>
+
+<sc-if value="{{conProgreso}}">
+<div class="fila" style="gap: 10px 14px">
+<label for="progreso" class="etiqueta-campo">Vas por {{unidad}}</label>
+<input id="progreso" class="entrada entrada--numero" type="number" min="0" max="{{totalMax}}" value="{{progreso}}" onChange="{{cambiarProgreso}}">
+<span class="texto-pequeno texto-suave">{{progresoTexto}}</span>
+<sc-if value="{{o.total}}"><span class="progreso" style="flex: 1 1 120px"><span style="width: {{progresoPct}}"></span></span></sc-if>
+</div>
+</sc-if>
+
+<div class="fila-accion">
+<div class="fila" style="gap: 4px 12px">
+<span class="etiqueta-campo" id="nota-etiqueta">Tu nota</span>
+<div class="puntuar" role="group" aria-labelledby="nota-etiqueta">
+<sc-for list="{{estrellas}}" as="s"><button type="button" class="estrella" onClick="{{s.elegir}}" aria-pressed="{{s.activa}}" aria-label="{{s.etiqueta}}"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"></path></svg></button></sc-for>
+</div>
+</div>
+<div class="fila">
+<button type="button" class="boton boton--contorno boton--pequeno boton-fav" onClick="{{alternarFav}}" aria-pressed="{{favActivo}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"></path></svg>{{favTexto}}</button>
+<a href="#resenas" class="boton boton--suave boton--pequeno">{{botonResena}}</a>
+<button type="button" class="boton boton--texto boton--pequeno" onClick="{{abrirRecomendar}}">Recomendar</button>
+</div>
+</div>
+<p class="texto-mini texto-suave" aria-live="polite">{{guardado}}</p>
+</div>
+</div>
+</section>
+</div>
+
+<section class="seccion seccion--papel">
+<div class="contenedor dos-columnas">
+<div class="pila" style="gap: 28px">
+<sc-if value="{{o.sinopsis}}"><div><div class="cabecera-seccion"><h2>Sinopsis</h2></div><p class="sinopsis">{{o.sinopsis}}</p></div></sc-if>
+
+<div id="resenas">
+<div class="cabecera-seccion"><h2>Reseñas</h2><span class="texto-pequeno texto-suave">{{numResenas}}</span></div>
+
+<!-- Tu reseña: escribir, editar y borrar -->
+<sc-if value="{{editando}}">
+<form class="pila" onSubmit="{{publicar}}" style="padding-bottom: 20px; border-bottom: 1px solid var(--linea)">
+<label for="texto-resena" class="etiqueta-campo">{{tituloEditor}}</label>
+<textarea id="texto-resena" class="entrada" maxlength="1200" placeholder="¿Qué te ha parecido? Sin destripar el final…" value="{{borrador}}" onInput="{{escribir}}" aria-describedby="ayuda-resena" aria-invalid="{{resenaInvalida}}"></textarea>
+<span id="ayuda-resena" class="ayuda {{ayudaClase}}">{{ayudaResena}}</span>
+<div class="fila"><button type="submit" class="boton boton--principal">Publicar reseña</button><sc-if value="{{puedeCancelar}}"><button type="button" class="boton boton--texto" onClick="{{cancelar}}">Cancelar</button></sc-if></div>
+</form>
+</sc-if>
+<sc-if value="{{verMia}}">
+<article class="resena" style="background: var(--blanco); padding: 18px; border: 1.5px solid var(--gris); border-radius: var(--radio)">
+<span class="avatar tono-albaricoque" aria-hidden="true">{{misIniciales}}</span>
+<div class="pila" style="gap: 8px">
+<div class="fila texto-pequeno" style="gap: 4px 12px"><b>Tu reseña</b><span class="estrellas" aria-label="{{miNotaTexto}}">{{miNotaEstrellas}}</span><span class="texto-suave">{{miFecha}}</span></div>
+<p class="resena-texto">{{miResena}}</p>
+<div class="fila"><button type="button" class="boton boton--contorno boton--pequeno" onClick="{{editar}}">Editar</button><button type="button" class="boton boton--peligro boton--pequeno" onClick="{{borrar}}">Borrar</button></div>
+</div>
+</article>
+</sc-if>
+
+<sc-for list="{{resenas}}" as="r">
+<article class="resena">
+<a href="{{r.url}}" class="avatar tono-{{r.tono}}" aria-label="Perfil de {{r.nombre}}">{{r.iniciales}}</a>
+<div class="pila" style="gap: 6px">
+<div class="fila texto-pequeno" style="gap: 4px 12px"><a href="{{r.url}}"><b>{{r.nombre}}</b></a><sc-if value="{{r.nota}}"><span class="estrellas" aria-label="{{r.notaTexto}}">{{r.estrellas}}</span></sc-if><span class="texto-suave">{{r.fecha}}</span><span class="ejemplo">Ejemplo</span></div>
+<sc-if value="{{r.resena}}"><p class="resena-texto">{{r.resena}}</p></sc-if>
+<sc-if value="{{r.soloNota}}"><p class="texto-pequeno texto-suave">La puntuó sin escribir reseña.</p></sc-if>
+</div>
+</article>
+</sc-for>
+<sc-if value="{{sinResenas}}"><p class="texto-suave" style="padding: 16px 0">Aún no hay reseñas de otros lectores. ¡Sé la primera persona en escribir una!</p></sc-if>
+</div>
+</div>
+
+<aside class="pila" style="gap: 8px">
+<sc-if value="{{o.saga}}">
+<div class="caja">
+<h2 class="caja-titulo">Tu avance en la saga</h2>
+<p class="texto-pequeno"><b>{{sagaLeidos}}</b> · {{sagaSiguiente}}</p>
+<span class="progreso" style="margin: 10px 0 4px"><span style="width: {{sagaPct}}"></span></span>
+<a href="{{sagaUrl}}" class="enlace texto-pequeno">Ver la saga completa</a>
+</div>
+</sc-if>
+<div class="caja">
+<h2 class="caja-titulo">Tu diario</h2>
+<p class="texto-pequeno texto-suave">{{resumenMio}}</p>
+<a href="biblioteca.html" class="enlace texto-pequeno">Abrir mi biblioteca</a>
+</div>
+</aside>
+</div>
+</section>
+
+<sc-if value="{{o.saga}}">
+<section class="seccion">
+<div class="contenedor">
+<div class="cabecera-seccion"><h2>Orden de lectura: {{o.sagaNombre}}</h2><span class="texto-pequeno texto-suave">{{sagaNota}}</span></div>
+<ol class="volumenes">
+<sc-for list="{{volumenes}}" as="v">
+<li data-actual="{{v.actual}}">
+<a href="{{v.o.url}}" class="enlace-portada" aria-label="{{v.o.titulo}}, volumen {{v.o.volumen}}"><dc-import name="Portada" obra="{{v.o}}" tam="s"></dc-import></a>
+<a href="{{v.o.url}}" class="obra-titulo" style="font-size: .95rem">{{v.o.titulo}}</a>
+<button type="button" class="boton boton--contorno boton--pequeno alternar" onClick="{{v.marcar}}" aria-pressed="{{v.leido}}">{{v.texto}}</button>
+</li>
+</sc-for>
+</ol>
+</div>
+</section>
+</sc-if>
+
+<section class="seccion" style="padding-top: 8px">
+<div class="contenedor secundario">
+<div>
+<h2 class="caja-titulo" style="padding-top: 14px; border-top: 1px solid var(--gris)">Dónde comprarlo</h2>
+<sc-for list="{{tiendas}}" as="t"><a href="{{t.url}}" class="tienda" target="_blank" rel="noopener"><span>Buscar en {{t.tienda}}<small>{{t.detalle}} · se abre en otra pestaña</small></span><span aria-hidden="true">↗</span></a></sc-for>
+<p class="texto-mini texto-suave" style="margin-top: 8px">Son búsquedas por título y autor: la compra se hace en la tienda.</p>
+</div>
+<div>
+<h2 class="caja-titulo" style="padding-top: 14px; border-top: 1px solid var(--gris)">Adaptaciones</h2>
+<sc-if value="{{sinAdaptaciones}}"><p class="texto-pequeno texto-suave">No tenemos adaptaciones registradas.</p></sc-if>
+<ul class="lista">
+<sc-for list="{{o.adaptaciones}}" as="a"><li style="padding: 10px 0"><span class="etiqueta">{{a.tipo}}</span><span class="texto-pequeno" style="flex: 1">{{a.titulo}}</span><span class="texto-pequeno texto-suave">{{a.anio}}</span></li></sc-for>
+</ul>
+</div>
+<div>
+<h2 class="caja-titulo" style="padding-top: 14px; border-top: 1px solid var(--gris)">Curiosidades</h2>
+<sc-if value="{{sinCuriosidades}}"><p class="texto-pequeno texto-suave">Sin curiosidades por ahora.</p></sc-if>
+<sc-for list="{{o.curiosidades}}" as="c"><p class="texto-pequeno" style="padding: 10px 0; border-bottom: 1px solid var(--linea)">{{c}}</p></sc-for>
+</div>
+</div>
+</section>
+</sc-if>
+</main>
+
+<dc-import name="Pie"></dc-import>
+
+<sc-if value="{{recomendarAbierto}}">
+<div class="fondo-modal" onClick="{{fondo}}">
+<div class="modal" role="dialog" aria-modal="true" aria-labelledby="titulo-modal" tabindex="-1">
+<div class="modal-cabecera">
+<h2 id="titulo-modal" class="titulo titulo-m">{{tituloModal}}</h2>
+<button type="button" class="boton-icono boton-icono--borde" data-cerrar="" onClick="{{cerrarRecomendar}}" aria-label="Cerrar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg></button>
+</div>
+<sc-if value="{{noEnviado}}">
+<span class="etiqueta-campo">Elige a quién · {{numElegidos}}</span>
+<div class="pila" style="gap: 8px">
+<sc-for list="{{amigos}}" as="a"><button type="button" class="opcion" onClick="{{a.elegir}}" aria-pressed="{{a.activo}}"><span class="avatar tono-{{a.tono}}">{{a.iniciales}}</span><span style="flex: 1"><b>{{a.nombre}}</b> <span class="texto-pequeno texto-suave">@{{a.usuario}}</span></span><span class="check" aria-hidden="true">✓</span></button></sc-for>
+</div>
+<button type="button" class="boton boton--principal boton--bloque" onClick="{{enviar}}" aria-disabled="{{envioDesactivado}}">{{textoEnviar}}</button>
+<p class="texto-mini texto-suave">Demostración: los lectores son de ejemplo y la recomendación no sale de tu navegador.</p>
+</sc-if>
+<sc-if value="{{enviado}}">
+<div class="exito"><span class="exito-icono" aria-hidden="true"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><path d="M5 12l5 5 9-10"></path></svg></span><p role="status"><b>¡Enviado!</b> Guardado en tu historial de recomendaciones (simulado).</p><button type="button" class="boton boton--principal" onClick="{{cerrarRecomendar}}">Volver a la ficha</button></div>
+</sc-if>
+</div>
+</div>
+</sc-if>
+</template>
+<script type="text/x-dc" data-dc-logic="__root">
+// Ficha de una obra. La obra se elige con la dirección: libro.html?id=dune
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.id = ByBook.parametro('id');
+    this.state = { editando: false, borrador: '', error: '', guardado: '', recomendar: false, enviado: false, elegidos: {} };
+  }
+  componentDidMount() {
+    const obra = ByBookDatos.obra(this.id);
+    if (obra) document.title = 'ByBook · ' + obra.titulo + ', de ' + ByBookDatos.autor(obra.autor).nombre;
+  }
+  // Guarda un cambio, avisa y vuelve a pintar la página
+  aviso(texto) { this.setState({ guardado: texto + ' · Guardado en tu navegador.' }); }
+
+  renderVals() {
+    const A = ByBookAlmacen, D = ByBookDatos, st = this.state;
+    const obra = D.obra(this.id);
+    if (!obra) {
+      return { noExiste: true, existe: false, recomendarAbierto: false,
+        motivo: this.id ? 'No hay ninguna obra con el identificador «' + this.id + '». Puede que el enlace esté mal escrito.' : 'Esta página necesita saber qué obra mostrar. Elige una desde el catálogo.' };
+    }
+    const id = obra.id;
+    const o = ByBook.vistaObra(obra);
+    const f = D.FORMATOS[obra.formato];
+    const mia = A.entrada(id);
+    const ejemplos = D.resenasDeEjemplo(id);
+    const editando = st.editando || !mia.resena;
+
+    // Saga
+    const saga = obra.saga ? D.SAGAS[obra.saga] : null;
+    const avance = saga ? A.progresoSaga(obra.saga) : null;
+
+    return {
+      noExiste: false, existe: true, o,
+      extension: obra.total ? obra.total + ' ' + f.unidades + (obra.formato === 'libro' ? ' (aprox.)' : '') : 'En publicación',
+      sinMedia: !o.media,
+      numValoraciones: ejemplos.filter((r) => r.nota).length + (mia.nota ? 1 : 0) + ' valoraciones',
+
+      // Estado de lectura
+      estados: ['quiero', 'leyendo', 'leido'].map((e) => ({
+        nombre: A.ESTADOS[e], activo: mia.estado === e ? 'true' : 'false',
+        elegir: () => { A.ponerEstado(id, e); this.aviso(A.entrada(id).estado ? 'Estado: ' + A.ESTADOS[e] : 'Estado quitado'); }
+      })),
+      conProgreso: mia.estado === 'leyendo',
+      unidad: 'el ' + f.unidad,
+      progreso: String(mia.progreso || 0),
+      totalMax: obra.total || 99999,
+      progresoTexto: obra.total ? 'de ' + obra.total + ' ' + f.unidades : f.unidades + ' (en publicación)',
+      progresoPct: obra.total ? Math.round((mia.progreso || 0) / obra.total * 100) + '%' : '0%',
+      cambiarProgreso: (e) => { A.ponerProgreso(id, e.target.value); this.aviso('Progreso actualizado'); },
+
+      // Nota y favorito
+      estrellas: [1, 2, 3, 4, 5].map((n) => ({
+        activa: mia.nota >= n ? 'true' : 'false', etiqueta: n + (n === 1 ? ' estrella' : ' estrellas'),
+        elegir: () => { A.ponerNota(id, n); this.aviso(A.entrada(id).nota ? 'Nota: ' + n + ' de 5' : 'Nota quitada'); }
+      })),
+      favActivo: mia.favorito ? 'true' : 'false',
+      favTexto: mia.favorito ? 'En favoritos' : 'Favorito',
+      alternarFav: () => { A.alternarFavorito(id); this.aviso(A.entrada(id).favorito ? 'Añadida a favoritos' : 'Quitada de favoritos'); },
+      botonResena: mia.resena ? 'Ver tu reseña' : 'Escribir reseña',
+      guardado: st.guardado,
+
+      // Reseña propia
+      editando,
+      verMia: !editando,
+      puedeCancelar: !!mia.resena,
+      tituloEditor: mia.resena ? 'Edita tu reseña' : 'Escribe tu reseña',
+      borrador: st.borrador,
+      escribir: (e) => this.setState({ borrador: e.target.value, error: '' }),
+      resenaInvalida: st.error ? 'true' : 'false',
+      ayudaResena: st.error || 'Se publicará en esta ficha y en tu perfil.',
+      ayudaClase: st.error ? 'ayuda--error' : '',
+      publicar: () => {
+        const texto = st.borrador.trim();
+        if (texto.length < 10) { this.setState({ error: 'Escribe al menos 10 caracteres.' }); return; }
+        A.guardarResena(id, texto);
+        this.setState({ editando: false, borrador: '', error: '', guardado: 'Reseña publicada · Guardado en tu navegador.' });
+      },
+      editar: () => { this.setState({ editando: true, borrador: mia.resena }); setTimeout(() => { const t = document.getElementById('texto-resena'); if (t) t.focus(); }, 30); },
+      cancelar: () => this.setState({ editando: false, borrador: '', error: '' }),
+      borrar: () => {
+        if (!window.confirm('¿Borrar tu reseña de «' + obra.titulo + '»?')) return;
+        A.borrarResena(id);
+        this.setState({ editando: false, borrador: '', guardado: 'Reseña borrada.' });
+      },
+      misIniciales: A.nombre().slice(0, 2).toUpperCase(),
+      miResena: mia.resena, miFecha: ByBook.fecha(mia.fechaResena),
+      miNotaEstrellas: ByBook.estrellas(mia.nota), miNotaTexto: ByBook.textoNota(mia.nota),
+
+      // Reseñas de ejemplo
+      resenas: ejemplos.map((r) => ({
+        nombre: r.lector.nombre, iniciales: r.lector.iniciales, tono: r.lector.tono, url: ByBook.urlPerfil(r.lector.usuario),
+        nota: r.nota, estrellas: ByBook.estrellas(r.nota), notaTexto: ByBook.textoNota(r.nota),
+        resena: r.resena, soloNota: !r.resena, fecha: ByBook.fecha(r.fecha)
+      })),
+      sinResenas: ejemplos.length === 0,
+      numResenas: (ejemplos.filter((r) => r.resena).length + (mia.resena ? 1 : 0)) + ' reseñas',
+
+      // Resumen de tu diario
+      resumenMio: [mia.estado ? A.ESTADOS[mia.estado] : 'No está en tu biblioteca', mia.favorito ? 'favorita' : '', mia.nota ? mia.nota + '/5' : '', mia.resena ? 'con reseña' : ''].filter(Boolean).join(' · '),
+
+      // Saga
+      sagaUrl: saga ? ByBook.urlSaga(obra.saga) : '',
+      sagaTotal: saga ? saga.obras.length : 0,
+      sagaNota: saga && saga.nota ? saga.nota : '',
+      sagaLeidos: avance ? avance.leidos + ' de ' + avance.total + ' leídos' : '',
+      sagaPct: avance ? avance.porcentaje + '%' : '0%',
+      sagaSiguiente: avance ? (avance.siguiente ? 'siguiente: ' + D.obra(avance.siguiente).titulo : '¡saga completada!') : '',
+      volumenes: saga ? saga.obras.map((vid) => {
+        const leido = A.entrada(vid).estado === 'leido';
+        return {
+          o: ByBook.vistaObra(D.obra(vid)), actual: vid === id ? 'true' : 'false',
+          leido: leido ? 'true' : 'false', texto: leido ? '✓ Leído' : 'Marcar leído',
+          marcar: () => { A.ponerEstado(vid, 'leido'); this.aviso(D.obra(vid).titulo + (leido ? ': ya no está marcado como leído' : ': marcado como leído')); }
+        };
+      }) : [],
+
+      // Secundario
+      tiendas: D.enlacesCompra(obra),
+      sinAdaptaciones: obra.adaptaciones.length === 0,
+      sinCuriosidades: obra.curiosidades.length === 0,
+
+      // Recomendar a un amigo (simulado)
+      recomendarAbierto: st.recomendar,
+      abrirRecomendar: () => ByBook.abrirDialogo(() => this.setState({ recomendar: true, enviado: false, elegidos: {} })),
+      cerrarRecomendar: () => ByBook.cerrarDialogo(() => this.setState({ recomendar: false })),
+      fondo: (e) => { if (e.target === e.currentTarget) ByBook.cerrarDialogo(() => this.setState({ recomendar: false })); },
+      tituloModal: st.enviado ? '¡Enviado!' : 'Recomendar «' + obra.titulo + '»',
+      noEnviado: !st.enviado, enviado: st.enviado,
+      amigos: D.listaLectores().filter((l) => l.publico).map((l) => ({
+        nombre: l.nombre, usuario: l.usuario, iniciales: l.iniciales, tono: l.tono,
+        activo: st.elegidos[l.usuario] ? 'true' : 'false',
+        elegir: () => this.setState({ elegidos: Object.assign({}, st.elegidos, { [l.usuario]: !st.elegidos[l.usuario] }) })
+      })),
+      numElegidos: Object.values(st.elegidos).filter(Boolean).length + ' seleccionados',
+      envioDesactivado: Object.values(st.elegidos).some(Boolean) ? 'false' : 'true',
+      textoEnviar: Object.values(st.elegidos).some(Boolean) ? 'Enviar recomendación' : 'Elige al menos un lector',
+      enviar: () => {
+        const para = Object.keys(st.elegidos).filter((u) => st.elegidos[u]);
+        if (!para.length) return;
+        para.forEach((u) => A.enviarRecomendacion(id, u));
+        this.setState({ enviado: true });
+        setTimeout(() => { const b = document.querySelector('.modal .exito .boton'); if (b) b.focus(); }, 30);
+      }
+    };
+  }
+}
+</script>
+
+<!-- Motor de plantillas, datos de ejemplo, tus datos guardados y piezas comunes (cabecera, pie, portada) -->
+<script src="js/dc.js"></script>
+<script src="js/datos.js"></script>
+<script src="js/almacen.js"></script>
+<script src="js/componentes.js"></script>
+</body>
+</html>

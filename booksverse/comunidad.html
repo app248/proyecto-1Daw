@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ByBook · Comunidad</title>
+<link rel="icon" href="img/logo.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..700&amp;family=Inter:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet">
+<!-- Estilos comunes de ByBook -->
+<link rel="stylesheet" href="css/bybook.css">
+<!-- Estilos propios de esta página -->
+<style>
+.carton { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; border: 2px solid var(--gris); max-width: 560px; }
+.casilla-bingo { aspect-ratio: 1 / 1; min-width: 0; padding: clamp(8px, 2vw, 14px); border: 0; border-right: 1px solid var(--gris); border-bottom: 1px solid var(--gris); background: var(--blanco); display: flex; flex-direction: column; justify-content: space-between; align-items: flex-start; text-align: left; transition: background var(--transicion); }
+.casilla-bingo:nth-child(3n) { border-right: 0; }
+.casilla-bingo:nth-last-child(-n+3) { border-bottom: 0; }
+.casilla-bingo:hover { background: var(--papel); }
+.casilla-bingo[aria-pressed="true"] { background: var(--turquesa); }
+.casilla-bingo .num { font-family: var(--fuente-titulos); font-style: italic; font-size: .95rem; }
+.casilla-bingo .texto { font-weight: 600; font-size: clamp(.72rem, 2.6vw, .92rem); line-height: 1.25; overflow-wrap: anywhere; hyphens: auto; }
+.casilla-bingo[aria-pressed="true"] .num::after { content: ' ✓'; font-style: normal; font-weight: 700; }
+.bingo { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); gap: clamp(24px, 5vw, 56px); align-items: start; }
+@media (max-width: 760px) { .bingo { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<!-- Aquí se dibuja la página: js/dc.js la pinta a partir de la plantilla de abajo -->
+<div id="dc-app" style="display: contents"></div>
+
+<!-- ===== Plantilla y lógica de la página ===== -->
+<template data-dc-component="__root">
+<dc-import name="Nav" active="comunidad"></dc-import>
+
+<main id="contenido">
+<div class="contenedor">
+<section style="padding: clamp(28px, 5vw, 48px) 0 20px">
+<span class="antetitulo">Más allá de las páginas</span>
+<h1 class="titulo titulo-xl" style="margin-top: 8px">Comunidad</h1>
+</section>
+<div class="pestanas" role="tablist" aria-label="Secciones de la comunidad">
+<sc-for list="{{pestanas}}" as="t"><button type="button" class="pestana" role="tab" id="pestana-{{t.id}}" aria-controls="panel-{{t.id}}" aria-selected="{{t.sel}}" tabindex="{{t.tabindex}}" onClick="{{t.elegir}}">{{t.nombre}}</button></sc-for>
+</div>
+
+<div role="tabpanel" id="panel-{{tab}}" aria-labelledby="pestana-{{tab}}" tabindex="0" style="padding: 32px 0 72px">
+<sc-if value="{{esBingo}}">
+<div class="bingo">
+<div class="pila" style="gap: 16px">
+<h2 class="titulo titulo-l">Bingo literario de otoño</h2>
+<p class="texto-suave">Marca cada casilla cuando leas una obra que cumpla el reto. Si completas una fila, columna o diagonal: ¡bingo! Tu cartón se guarda en este navegador.</p>
+<p><b class="titulo" style="font-size: 2.4rem">{{hechas}}</b> <span class="texto-suave">de 9 · </span><span aria-live="polite">{{mensaje}}</span></p>
+<button type="button" class="boton boton--contorno boton--pequeno" style="align-self: flex-start" onClick="{{reiniciar}}">Reiniciar cartón</button>
+</div>
+<div class="carton" role="group" aria-label="Cartón de bingo">
+<sc-for list="{{casillas}}" as="c"><button type="button" class="casilla-bingo" onClick="{{c.alternar}}" aria-pressed="{{c.marcada}}"><span class="num">{{c.num}}</span><span class="texto">{{c.texto}}</span></button></sc-for>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{esCine}}">
+<div class="pila" style="gap: 8px; max-width: 860px">
+<p class="texto-suave" style="margin-bottom: 12px">Obras del catálogo que tienen película, serie o anime.</p>
+<ul class="lista">
+<sc-for list="{{adaptaciones}}" as="a">
+<li>
+<a href="{{a.o.url}}" class="enlace-portada" style="width: 48px; flex: none" aria-hidden="true" tabindex="-1"><dc-import name="Portada" obra="{{a.o}}" tam="xs"></dc-import></a>
+<div style="flex: 1; min-width: 0"><a href="{{a.o.url}}" class="obra-titulo">{{a.o.titulo}}</a><div class="texto-mini texto-suave">{{a.o.formatoNombre}} de {{a.o.autorNombre}} ({{a.o.anio}})</div></div>
+<span class="texto-pequeno" style="text-align: right"><span class="etiqueta">{{a.tipo}}</span> {{a.anio}}</span>
+</li>
+</sc-for>
+</ul>
+</div>
+</sc-if>
+
+<sc-if value="{{esDia}}">
+<div class="dos-columnas">
+<div class="pila" style="gap: 14px">
+<p class="titulo" style="font-size: clamp(4rem, 12vw, 7rem); line-height: .85">23 <span class="cursiva" style="font-size: .35em">de abril</span></p>
+<h2 class="titulo titulo-m">Día Internacional del Libro</h2>
+<p>La UNESCO lo proclamó en 1995. La fecha recuerda que en 1616 murieron, según el calendario, Cervantes, Shakespeare y el Inca Garcilaso de la Vega.</p>
+<p>En Cataluña coincide con Sant Jordi, cuando es tradición regalar un libro y una rosa.</p>
+</div>
+<div class="acordeon">
+<h3 class="caja-titulo">Curiosidades</h3>
+<details open=""><summary>¿Qué libro está entre los más traducidos?</summary><p>El principito, de Antoine de Saint-Exupéry, se ha traducido a cientos de idiomas y dialectos.</p></details>
+<details><summary>¿Por qué es tan importante el Quijote?</summary><p>Se considera la primera novela moderna y es una de las obras más editadas de la historia.</p></details>
+<details><summary>¿De dónde viene la palabra «libro»?</summary><p>Del latín liber, la capa interior de la corteza de los árboles, que se usaba para escribir.</p></details>
+</div>
+</div>
+</sc-if>
+</div>
+</div>
+</main>
+
+<dc-import name="Pie"></dc-import>
+</template>
+<script type="text/x-dc" data-dc-logic="__root">
+// Comunidad: bingo (guardado en el navegador), adaptaciones del catálogo y Día del Libro
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { tab: 'bingo' }; }
+  renderVals() {
+    const A = ByBookAlmacen, D = ByBookDatos, st = this.state;
+    const retos = ['Un clásico de más de 100 años', 'Una obra con película o serie', 'El primero de una saga', 'Un autor nuevo para ti', 'Un manga o manhwa', 'Una obra de menos de 150 páginas', 'Más de 500 páginas', 'Un webtoon', 'Una que te recomendaron'];
+    const b = A.bingo();
+    const lineas = [[0, 1, 2], [3, 4, 5], [6, 7, 8], [0, 3, 6], [1, 4, 7], [2, 5, 8], [0, 4, 8], [2, 4, 6]];
+    const hayLinea = lineas.some((l) => l.every((i) => b[i]));
+    const hechas = b.filter(Boolean).length;
+    const nombres = [['bingo', 'Bingo literario'], ['cine', 'Del papel a la pantalla'], ['dia', 'Día del Libro']];
+    const adaptaciones = [];
+    D.listaObras().forEach((o) => o.adaptaciones.forEach((a) => adaptaciones.push({ o: ByBook.vistaObra(o), tipo: a.tipo, anio: a.anio })));
+    adaptaciones.sort((x, y) => y.anio - x.anio);
+    return {
+      tab: st.tab,
+      pestanas: nombres.map((n) => ({ id: n[0], nombre: n[1], sel: st.tab === n[0] ? 'true' : 'false', tabindex: st.tab === n[0] ? '0' : '-1', elegir: () => this.setState({ tab: n[0] }) })),
+      esBingo: st.tab === 'bingo', esCine: st.tab === 'cine', esDia: st.tab === 'dia',
+      hechas,
+      mensaje: hechas === 9 ? '¡Cartón completo!' : hayLinea ? '¡Bingo! Has completado una línea.' : 'Te quedan ' + (9 - hechas) + ' casillas.',
+      reiniciar: () => { A.ponerBingo([false, false, false, false, false, false, false, false, false]); this.forceUpdate(); },
+      casillas: retos.map((t, i) => ({ num: String(i + 1).padStart(2, '0'), texto: t, marcada: b[i] ? 'true' : 'false', alternar: () => { const n = b.slice(); n[i] = !n[i]; A.ponerBingo(n); this.forceUpdate(); } })),
+      adaptaciones
+    };
+  }
+}
+</script>
+
+<!-- Motor de plantillas, datos de ejemplo, tus datos guardados y piezas comunes (cabecera, pie, portada) -->
+<script src="js/dc.js"></script>
+<script src="js/datos.js"></script>
+<script src="js/almacen.js"></script>
+<script src="js/componentes.js"></script>
+</body>
+</html>

@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ByBook · Guía de estilo</title>
+<link rel="icon" href="img/logo.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..700&amp;family=Inter:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet">
+<!-- Estilos comunes de ByBook -->
+<link rel="stylesheet" href="css/bybook.css">
+<!-- Estilos propios de esta página -->
+<style>
+.muestras { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0; border-top: 1px solid var(--gris); }
+.muestra { padding: 12px 12px 16px 0; border-bottom: 1px solid var(--linea); }
+.muestra span:first-child { display: block; height: 72px; margin-bottom: 10px; border-radius: var(--radio); box-shadow: inset 0 0 0 1px var(--linea); }
+.muestra code, .guia code { font-family: ui-monospace, Consolas, monospace; font-size: .82rem; }
+.guia { display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 12px 32px; padding: 24px 0; border-top: 1px solid var(--linea); align-items: start; }
+.portadas-guia { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 16px; }
+@media (max-width: 700px) { .guia { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<!-- Aquí se dibuja la página: js/dc.js la pinta a partir de la plantilla de abajo -->
+<div id="dc-app" style="display: contents"></div>
+
+<!-- ===== Plantilla y lógica de la página ===== -->
+<template data-dc-component="__root">
+<dc-import name="Nav" active=""></dc-import>
+
+<main id="contenido">
+<div class="contenedor" style="padding-bottom: 72px">
+<section style="padding: clamp(28px, 5vw, 48px) 0 28px" class="pila">
+<span class="antetitulo">Para el equipo</span>
+<h1 class="titulo titulo-xl">Guía de estilo</h1>
+<p class="entradilla">Colores, tipografía y componentes de ByBook. Todo sale de <code>css/bybook.css</code>; las piezas comunes (cabecera, pie y portada) están en <code>js/componentes.js</code>.</p>
+</section>
+
+<div class="cabecera-seccion"><h2>Paleta</h2><span class="texto-pequeno texto-suave">El color orienta y marca estados; no decora.</span></div>
+<div class="muestras">
+<sc-for list="{{colores}}" as="c"><div class="muestra"><span style="background: {{c.hex}}"></span><b>{{c.nombre}}</b><br><code>{{c.hex}} · {{c.var}}</code><p class="texto-mini texto-suave">{{c.uso}}</p></div></sc-for>
+</div>
+
+<div class="cabecera-seccion" style="margin-top: 40px"><h2>Tipografía</h2></div>
+<div class="guia"><span class="caja-titulo">Fraunces · titulares</span><div><p class="titulo titulo-xl">Diario de lectura</p><p class="titulo titulo-m cursiva">Cursiva para matices y citas</p></div></div>
+<div class="guia"><span class="caja-titulo">Inter · interfaz</span><div class="pila" style="gap: 6px"><p>Texto normal a 16 px con interlineado 1,6 para leer cómodamente.</p><p class="texto-pequeno texto-suave">Texto secundario (gris suave, contraste 5,7:1).</p><span class="antetitulo">Antetítulo de sección</span></div></div>
+
+<div class="cabecera-seccion" style="margin-top: 40px"><h2>Componentes</h2></div>
+<div class="guia"><span class="caja-titulo">Botones</span><div class="fila"><button type="button" class="boton boton--principal">Principal</button><button type="button" class="boton boton--contorno">Contorno</button><button type="button" class="boton boton--suave">Suave</button><button type="button" class="boton boton--texto">Texto</button><button type="button" class="boton boton--peligro">Borrar</button></div></div>
+<div class="guia"><span class="caja-titulo">Estado de lectura</span><div class="estados" role="group" aria-label="Ejemplo de estados" style="max-width: 420px"><button type="button" aria-pressed="false">Quiero leer</button><button type="button" aria-pressed="true">Leyendo</button><button type="button" aria-pressed="false">Leído</button></div></div>
+<div class="guia"><span class="caja-titulo">Etiquetas de estado</span><div class="fila"><span class="etiqueta etiqueta--quiero">Quiero leer</span><span class="etiqueta etiqueta--leyendo">Leyendo</span><span class="etiqueta etiqueta--leido">Leído</span><span class="etiqueta etiqueta--fav">♥ Favorita</span><span class="ejemplo">Ejemplo</span></div></div>
+<div class="guia"><span class="caja-titulo">Filtros y pestañas</span><div class="pila"><div class="filtros"><button type="button" class="filtro" aria-pressed="true">Todo</button><button type="button" class="filtro" aria-pressed="false">Libros</button><button type="button" class="filtro" aria-pressed="false">Manga</button></div><div class="pestanas"><span class="pestana" aria-selected="true" style="display: inline-flex; align-items: center">Leyendo</span><span class="pestana" style="display: inline-flex; align-items: center">Leídas</span></div></div></div>
+<div class="guia"><span class="caja-titulo">Puntuación</span><div class="fila"><span class="estrellas" aria-label="4 de 5 estrellas">★★★★☆</span><span class="texto-pequeno texto-suave">En la ficha son 5 botones que se pueden pulsar.</span></div></div>
+<div class="guia"><span class="caja-titulo">Campos</span><div class="fila" style="align-items: flex-start"><div class="campo" style="flex: 1 1 220px"><label for="g1">Campo</label><input id="g1" class="entrada" placeholder="Escribe algo"></div><div class="campo" style="flex: 1 1 220px"><label for="g2">Con error</label><input id="g2" class="entrada" aria-invalid="true" value="correo@"><span class="ayuda ayuda--error">Escribe un correo válido.</span></div></div></div>
+<div class="guia"><span class="caja-titulo">Avisos y vacíos</span><div class="pila"><p class="nota-prototipo">Nota de prototipo: explica qué es simulado.</p><div class="vacio"><b>Estado vacío</b><p class="texto-suave texto-pequeno">Dice qué falta y ofrece el siguiente paso.</p></div></div></div>
+
+<div class="cabecera-seccion" style="margin-top: 40px"><h2>Portadas tipográficas</h2><span class="texto-pequeno texto-suave">Tono (color) + estilo (composición)</span></div>
+<p class="texto-suave" style="margin-bottom: 18px">No hay imágenes reales, así que cada obra combina uno de los cinco tonos con uno de los siete estilos. Los volúmenes de una saga comparten combinación y llevan su número.</p>
+<div class="portadas-guia">
+<sc-for list="{{portadas}}" as="p"><div class="pila" style="gap: 6px"><dc-import name="Portada" obra="{{p.o}}" tam="s"></dc-import><code>{{p.estilo}}</code></div></sc-for>
+</div>
+</div>
+</main>
+
+<dc-import name="Pie"></dc-import>
+</template>
+<script type="text/x-dc" data-dc-logic="__root">
+// Guía de estilo: muestra la paleta, la tipografía y los componentes reales del proyecto
+class Component extends DCLogic {
+  renderVals() {
+    const D = ByBookDatos;
+    const ejemplos = { marco: 'dune', banda: 'juego-tronos', inicial: 'hobbit', trama: 'watchmen', rayos: 'one-piece', diagonal: 'solo-leveling', tiras: 'lore-olympus' };
+    return {
+      colores: [
+        ['Blanco', '#FFFFFF', '--blanco', 'Fondo principal'], ['Gris oscuro', '#3B3B3B', '--gris', 'Texto, reglas, botón principal, pie'],
+        ['Albaricoque', '#F7CCA1', '--albaricoque', 'Portadas, acciones suaves'], ['Naranja', '#EA7434', '--naranja', 'Logo, marcas de selección, estrellas'],
+        ['Turquesa', '#68D3D8', '--turquesa', 'Estado «Leyendo», confirmaciones'], ['Naranja tinta', '#B84E17', '--naranja-tinta', 'Naranja legible en texto pequeño'],
+        ['Turquesa tinta', '#1E7F84', '--turquesa-tinta', 'Foco del teclado, progreso'], ['Papel', '#FBF7F2', '--papel', 'Fondos de sección']
+      ].map((c) => ({ nombre: c[0], hex: c[1], var: c[2], uso: c[3] })),
+      portadas: Object.keys(ejemplos).map((estilo) => ({ estilo, o: ByBook.vistaObra(D.obra(ejemplos[estilo])) }))
+    };
+  }
+}
+</script>
+
+<!-- Motor de plantillas, datos de ejemplo, tus datos guardados y piezas comunes (cabecera, pie, portada) -->
+<script src="js/dc.js"></script>
+<script src="js/datos.js"></script>
+<script src="js/almacen.js"></script>
+<script src="js/componentes.js"></script>
+</body>
+</html>

@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ByBook · Mi biblioteca</title>
+<link rel="icon" href="img/logo.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..700&amp;family=Inter:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet">
+<!-- Estilos comunes de ByBook -->
+<link rel="stylesheet" href="css/bybook.css">
+<!-- Estilos propios de esta página -->
+<style>
+.diario-cabecera { padding: clamp(28px, 5vw, 48px) 0 0; }
+.diario-cabecera .resumen { display: flex; flex-wrap: wrap; gap: 4px 20px; margin-top: 10px; font-size: .95rem; }
+.diario-cabecera .resumen b { font-family: var(--fuente-titulos); font-size: 1.25rem; }
+.fila-lectura { display: grid; grid-template-columns: 72px minmax(0, 1fr) auto; gap: 16px; align-items: center; padding: 16px 0; border-bottom: 1px solid var(--linea); }
+.fila-lectura .controles { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.fila-lectura .progreso { margin-top: 8px; max-width: 320px; }
+.lateral-diario .caja { padding: 16px 0 20px; }
+.saga-mini { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 10px; padding: 8px 0; font-size: .88rem; }
+.saga-mini .progreso { grid-column: 1 / -1; }
+@media (max-width: 600px) {
+  .fila-lectura { grid-template-columns: 56px minmax(0, 1fr); }
+  .fila-lectura .controles { grid-column: 1 / -1; }
+}
+</style>
+</head>
+<body>
+<!-- Aquí se dibuja la página: js/dc.js la pinta a partir de la plantilla de abajo -->
+<div id="dc-app" style="display: contents"></div>
+
+<!-- ===== Plantilla y lógica de la página ===== -->
+<template data-dc-component="__root">
+<dc-import name="Nav" active="biblioteca"></dc-import>
+
+<main id="contenido">
+<section class="diario-cabecera">
+<div class="contenedor">
+<span class="antetitulo">Mi biblioteca</span>
+<h1 class="titulo titulo-xl" style="margin-top: 8px">Diario de {{nombre}}</h1>
+<div class="resumen" aria-label="Resumen">
+<span><b>{{n.leyendo}}</b> leyendo</span><span><b>{{n.quiero}}</b> pendientes</span><span><b>{{n.leido}}</b> leídas</span><span><b>{{n.fav}}</b> favoritas</span><span><b>{{n.resenas}}</b> reseñas</span>
+</div>
+<sc-if value="{{invitado}}"><p class="nota-prototipo" style="margin-top: 16px">Estás como invitado. Tus lecturas ya se guardan en este navegador; <a href="acceso.html?modo=registro" class="enlace">crea una cuenta de demostración</a> para ponerle tu nombre.</p></sc-if>
+</div>
+</section>
+
+<div class="contenedor dos-columnas" style="padding-top: 28px; padding-bottom: 72px">
+<div>
+<div class="pestanas" role="tablist" aria-label="Estanterías">
+<sc-for list="{{pestanas}}" as="t"><button type="button" class="pestana" role="tab" id="pestana-{{t.id}}" aria-controls="panel-{{t.id}}" aria-selected="{{t.sel}}" tabindex="{{t.tabindex}}" onClick="{{t.elegir}}">{{t.nombre}}<span class="num">{{t.num}}</span></button></sc-for>
+</div>
+
+<div role="tabpanel" id="panel-{{tab}}" aria-labelledby="pestana-{{tab}}" tabindex="0" style="padding-top: 8px">
+<sc-if value="{{vacio}}">
+<div class="vacio" style="margin-top: 20px">
+<b class="titulo titulo-s">{{vacioTitulo}}</b>
+<p class="texto-suave">{{vacioTexto}}</p>
+<a href="explorar.html" class="boton boton--principal boton--pequeno">Buscar en el catálogo</a>
+</div>
+</sc-if>
+
+<!-- Leyendo: progreso editable -->
+<sc-if value="{{esLeyendo}}">
+<sc-for list="{{lista}}" as="e">
+<div class="fila-lectura">
+<a href="{{e.o.url}}" class="enlace-portada" aria-label="{{e.o.titulo}}"><dc-import name="Portada" obra="{{e.o}}" tam="s"></dc-import></a>
+<div>
+<a href="{{e.o.url}}" class="obra-titulo">{{e.o.titulo}}</a>
+<div class="obra-autor">{{e.o.autorNombre}} · {{e.o.formatoNombre}}</div>
+<div class="texto-pequeno" style="margin-top: 6px">{{e.progresoTexto}}</div>
+<sc-if value="{{e.o.total}}"><div class="progreso"><span style="width: {{e.pct}}"></span></div></sc-if>
+</div>
+<div class="controles">
+<button type="button" class="boton-icono boton-icono--borde" onClick="{{e.menos}}" aria-label="Restar una {{e.unidad}} a {{e.o.titulo}}">−</button>
+<button type="button" class="boton-icono boton-icono--borde" onClick="{{e.mas}}" aria-label="Sumar una {{e.unidad}} a {{e.o.titulo}}">+</button>
+<button type="button" class="boton boton--contorno boton--pequeno" onClick="{{e.terminar}}">Terminado</button>
+</div>
+</div>
+</sc-for>
+</sc-if>
+
+<!-- Pendientes y favoritas: estantería de portadas -->
+<sc-if value="{{esEstante}}">
+<div class="estanteria" style="padding-top: 20px">
+<sc-for list="{{lista}}" as="e">
+<article class="obra">
+<a href="{{e.o.url}}" class="enlace-portada" aria-label="{{e.o.etiquetaAccesible}}"><dc-import name="Portada" obra="{{e.o}}"></dc-import></a>
+<div class="obra-info"><a href="{{e.o.url}}" class="obra-titulo">{{e.o.titulo}}</a><span class="obra-autor">{{e.o.autorNombre}}</span><span class="obra-meta">{{e.meta}}</span></div>
+<sc-if value="{{e.puedeEmpezar}}"><button type="button" class="boton boton--contorno boton--pequeno" onClick="{{e.empezar}}">Empezar a leer</button></sc-if>
+</article>
+</sc-for>
+</div>
+</sc-if>
+
+<!-- Leídas y reseñas: entradas de diario con fecha -->
+<sc-if value="{{esDiario}}">
+<ul class="lista" style="margin-top: 12px">
+<sc-for list="{{lista}}" as="e">
+<li style="align-items: flex-start">
+<span class="diario-fecha"><b>{{e.dia}}</b><span>{{e.mes}}</span></span>
+<a href="{{e.o.url}}" class="enlace-portada" style="width: 54px; flex: none" aria-label="{{e.o.titulo}}"><dc-import name="Portada" obra="{{e.o}}" tam="xs"></dc-import></a>
+<div class="pila" style="gap: 4px; flex: 1; min-width: 0">
+<div class="fila" style="gap: 4px 10px"><a href="{{e.o.url}}" class="obra-titulo">{{e.o.titulo}}</a><sc-if value="{{e.nota}}"><span class="estrellas" aria-label="{{e.notaTexto}}">{{e.estrellas}}</span></sc-if><sc-if value="{{e.favorito}}"><span class="etiqueta etiqueta--fav">♥ Favorita</span></sc-if></div>
+<span class="obra-autor">{{e.o.autorNombre}} · {{e.estadoTexto}}</span>
+<sc-if value="{{e.resena}}"><p class="resena-texto" style="font-size: 1rem">{{e.resena}}</p></sc-if>
+<a href="{{e.urlResena}}" class="enlace texto-pequeno" style="align-self: flex-start">{{e.textoEnlace}}</a>
+</div>
+</li>
+</sc-for>
+</ul>
+</sc-if>
+</div>
+</div>
+
+<aside class="lateral-diario">
+<div class="caja">
+<h2 class="caja-titulo">Reto de lectura {{anio}}</h2>
+<p><b class="titulo" style="font-size: 2rem">{{retoLeidas}}</b> <span class="texto-suave">de {{reto}} obras</span></p>
+<div class="progreso" style="margin: 8px 0 12px" role="progressbar" aria-label="Progreso del reto" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{retoPctN}}"><span style="width: {{retoPct}}"></span></div>
+<div class="fila"><span class="texto-pequeno" style="flex: 1">Objetivo</span><button type="button" class="boton-icono boton-icono--borde" onClick="{{retoMenos}}" aria-label="Bajar objetivo">−</button><button type="button" class="boton-icono boton-icono--borde" onClick="{{retoMas}}" aria-label="Subir objetivo">+</button></div>
+</div>
+
+<div class="caja">
+<h2 class="caja-titulo">Mis sagas</h2>
+<sc-for list="{{sagas}}" as="s"><a href="{{s.url}}" class="saga-mini"><span>{{s.nombre}}</span><span class="texto-suave">{{s.texto}}</span><span class="progreso"><span style="width: {{s.pct}}"></span></span></a></sc-for>
+</div>
+
+<div class="caja">
+<h2 class="caja-titulo">Te recomiendan <span class="ejemplo">Ejemplo</span></h2>
+<sc-if value="{{sinRecomendaciones}}"><p class="texto-pequeno texto-suave">Ya has añadido todas las recomendaciones.</p></sc-if>
+<ul class="lista">
+<sc-for list="{{recomendaciones}}" as="r">
+<li style="padding: 10px 0">
+<span class="avatar tono-{{r.tono}}" aria-hidden="true">{{r.iniciales}}</span>
+<span class="texto-pequeno" style="flex: 1"><a href="{{r.perfil}}"><b>{{r.nombre}}</b></a> te recomienda <a href="{{r.o.url}}" class="enlace">{{r.o.titulo}}</a></span>
+<button type="button" class="boton boton--contorno boton--pequeno" onClick="{{r.anadir}}" aria-label="Añadir {{r.o.titulo}} a Quiero leer">+ Pendiente</button>
+</li>
+</sc-for>
+</ul>
+</div>
+
+<div class="caja">
+<h2 class="caja-titulo">Privacidad</h2>
+<button type="button" class="interruptor" role="switch" aria-checked="{{publico}}" onClick="{{alternarPublico}}"><span>Perfil {{privacidad}}</span><span class="pista" aria-hidden="true"></span></button>
+<p class="texto-mini texto-suave">Demostración: no hay otros usuarios reales, así que esta opción solo cambia cómo se describe tu perfil.</p>
+<a href="perfil.html?u=yo" class="enlace texto-pequeno">Ver mi perfil público</a>
+</div>
+</aside>
+</div>
+</main>
+
+<dc-import name="Pie"></dc-import>
+</template>
+<script type="text/x-dc" data-dc-logic="__root">
+// Mi biblioteca: tu diario de lectura. Todos los datos vienen de js/almacen.js (localStorage).
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    const validas = ['leyendo', 'quiero', 'leido', 'fav', 'resenas'];
+    const pedida = ByBook.parametro('estante');
+    this.state = { tab: validas.includes(pedida) ? pedida : 'leyendo' };
+  }
+  renderVals() {
+    const A = ByBookAlmacen, D = ByBookDatos, st = this.state;
+    const mias = A.misObras();
+    const grupos = {
+      leyendo: mias.filter((e) => e.estado === 'leyendo'),
+      quiero: mias.filter((e) => e.estado === 'quiero'),
+      leido: mias.filter((e) => e.estado === 'leido'),
+      fav: mias.filter((e) => e.favorito),
+      resenas: mias.filter((e) => e.resena)
+    };
+    const nombres = { leyendo: 'Leyendo', quiero: 'Quiero leer', leido: 'Leídas', fav: 'Favoritas', resenas: 'Reseñas' };
+    const vacios = {
+      leyendo: ['No estás leyendo nada ahora', 'Abre una obra y pulsa «Leyendo» para seguir tu progreso aquí.'],
+      quiero: ['Tu lista de pendientes está vacía', 'Pulsa «Quiero leer» en cualquier ficha para guardarla aquí.'],
+      leido: ['Todavía no has marcado nada como leído', 'Cuando termines una obra, márcala como «Leído» y puntúala.'],
+      fav: ['Aún no tienes favoritas', 'Pulsa «Favorito» en la ficha de las obras que más te gusten.'],
+      resenas: ['Todavía no has escrito reseñas', 'Escribe tu opinión desde la ficha de una obra.']
+    };
+    const rehacer = () => this.forceUpdate();
+    const f = (e) => D.FORMATOS[e.obra.formato];
+    const anio = new Date().getFullYear();
+    const retoLeidas = grupos.leido.filter((e) => (e.actualizado || '').startsWith(String(anio))).length;
+    const retoPctN = Math.min(100, Math.round(retoLeidas / A.reto() * 100));
+
+    const lista = grupos[st.tab].map((e) => {
+      const o = ByBook.vistaObra(e.obra);
+      const fecha = (st.tab === 'resenas' ? e.fechaResena : e.actualizado) || e.actualizado || '';
+      const partes = ByBook.fecha(fecha).split(' ');
+      return {
+        o, nota: e.nota, estrellas: ByBook.estrellas(e.nota), notaTexto: ByBook.textoNota(e.nota),
+        favorito: e.favorito, resena: e.resena,
+        estadoTexto: e.estado ? A.ESTADOS[e.estado] : 'Sin estado',
+        dia: partes[0], mes: partes[1],
+        urlResena: o.url + '#resenas',
+        textoEnlace: e.resena ? 'Editar o borrar la reseña' : 'Escribir reseña',
+        meta: st.tab === 'fav' && e.estado ? A.ESTADOS[e.estado] : o.formatoNombre + ' · ' + o.anio,
+        unidad: f(e).unidad,
+        progresoTexto: e.obra.total ? 'Vas por ' + f(e).unidad + ' ' + (e.progreso || 0) + ' de ' + e.obra.total : 'Vas por ' + f(e).unidad + ' ' + (e.progreso || 0),
+        pct: e.obra.total ? Math.round((e.progreso || 0) / e.obra.total * 100) + '%' : '0%',
+        menos: () => { A.ponerProgreso(e.id, (e.progreso || 0) - 1); rehacer(); },
+        mas: () => { A.ponerProgreso(e.id, (e.progreso || 0) + 1); rehacer(); },
+        terminar: () => { A.ponerEstado(e.id, 'leido'); rehacer(); },
+        puedeEmpezar: e.estado === 'quiero',
+        empezar: () => { A.ponerEstado(e.id, 'leyendo'); rehacer(); }
+      };
+    });
+
+    // Recomendaciones de ejemplo: desaparecen cuando la obra ya está en tu biblioteca
+    const recomendaciones = [['lucia.lee', 'solo-leveling'], ['sara.manga', 'frieren'], ['dani.comics', 'watchmen'], ['marcos_lee', 'dune']]
+      .filter((r) => !A.entrada(r[1]).estado)
+      .map((r) => {
+        const l = D.lector(r[0]);
+        return { nombre: l.nombre, iniciales: l.iniciales, tono: l.tono, perfil: ByBook.urlPerfil(l.usuario), o: ByBook.vistaObra(D.obra(r[1])), anadir: () => { A.ponerEstado(r[1], 'quiero'); rehacer(); } };
+      });
+
+    return {
+      nombre: A.nombre(), invitado: !A.cuenta(),
+      n: { leyendo: grupos.leyendo.length, quiero: grupos.quiero.length, leido: grupos.leido.length, fav: grupos.fav.length, resenas: grupos.resenas.length },
+      tab: st.tab,
+      pestanas: Object.keys(nombres).map((k) => ({
+        id: k, nombre: nombres[k], num: grupos[k].length, sel: st.tab === k ? 'true' : 'false', tabindex: st.tab === k ? '0' : '-1',
+        elegir: () => { this.setState({ tab: k }); history.replaceState(null, '', 'biblioteca.html?estante=' + k); }
+      })),
+      vacio: lista.length === 0, vacioTitulo: vacios[st.tab][0], vacioTexto: vacios[st.tab][1],
+      esLeyendo: st.tab === 'leyendo', esEstante: st.tab === 'quiero' || st.tab === 'fav', esDiario: st.tab === 'leido' || st.tab === 'resenas',
+      lista,
+      anio, reto: A.reto(), retoLeidas, retoPct: retoPctN + '%', retoPctN,
+      retoMenos: () => { A.ponerReto(A.reto() - 1); rehacer(); },
+      retoMas: () => { A.ponerReto(A.reto() + 1); rehacer(); },
+      sagas: Object.keys(D.SAGAS).map((id) => { const p = A.progresoSaga(id); return { nombre: D.SAGAS[id].nombre, url: ByBook.urlSaga(id), texto: p.leidos + '/' + p.total, pct: p.porcentaje + '%' }; }),
+      recomendaciones, sinRecomendaciones: recomendaciones.length === 0,
+      publico: A.esPublico() ? 'true' : 'false', privacidad: A.esPublico() ? 'público' : 'privado',
+      alternarPublico: () => { A.alternarPublico(); rehacer(); }
+    };
+  }
+}
+</script>
+
+<!-- Motor de plantillas, datos de ejemplo, tus datos guardados y piezas comunes (cabecera, pie, portada) -->
+<script src="js/dc.js"></script>
+<script src="js/datos.js"></script>
+<script src="js/almacen.js"></script>
+<script src="js/componentes.js"></script>
+</body>
+</html>

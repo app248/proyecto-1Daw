@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ByBook · Lectores</title>
+<link rel="icon" href="img/logo.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..700&amp;family=Inter:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet">
+<!-- Estilos comunes de ByBook -->
+<link rel="stylesheet" href="css/bybook.css">
+<!-- Estilos propios de esta página -->
+<style>
+.lector { display: grid; grid-template-columns: 64px minmax(0, 1fr) auto; gap: 16px 20px; align-items: center; padding: 20px 0; border-bottom: 1px solid var(--linea); animation: aparece .3s ease both; }
+.lector .avatar { width: 64px; height: 64px; font-family: var(--fuente-titulos); font-size: 1.4rem; font-weight: 600; }
+.lector .lecturas { display: flex; gap: 6px; margin-top: 8px; }
+.lector .lecturas .enlace-portada { width: 34px; }
+.boton-seguir[data-estado="siguiendo"] { background: var(--gris); color: var(--blanco); }
+.boton-seguir[data-estado="pendiente"] { background: var(--crema); border-color: var(--naranja-tinta); }
+.invitar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; padding: 22px; margin-top: 32px; background: var(--crema); border-radius: var(--radio); }
+.invitar code { flex: 1 1 260px; padding: 10px 12px; background: var(--blanco); border: 1px solid var(--linea); border-radius: var(--radio); font-size: .85rem; overflow-wrap: anywhere; }
+@media (max-width: 640px) { .lector { grid-template-columns: 52px minmax(0, 1fr); } .lector .avatar { width: 52px; height: 52px; } .lector .acciones-lector { grid-column: 1 / -1; } }
+</style>
+</head>
+<body>
+<!-- Aquí se dibuja la página: js/dc.js la pinta a partir de la plantilla de abajo -->
+<div id="dc-app" style="display: contents"></div>
+
+<!-- ===== Plantilla y lógica de la página ===== -->
+<template data-dc-component="__root">
+<dc-import name="Nav" active="lectores"></dc-import>
+
+<main id="contenido">
+<div class="contenedor">
+<section style="padding: clamp(28px, 5vw, 48px) 0 20px" class="pila">
+<span class="antetitulo">Comunidad</span>
+<h1 class="titulo titulo-xl">Lectores</h1>
+<p class="entradilla">Encuentra lectores con tus gustos. Los perfiles públicos se siguen al momento; los privados reciben una solicitud.</p>
+<p class="nota-prototipo">Todos los lectores de esta página son perfiles de ejemplo.</p>
+</section>
+
+<div class="fila separa" style="padding: 12px 0; border-top: 3px solid var(--gris); border-bottom: 1px solid var(--linea)">
+<div class="filtros" role="group" aria-label="Mostrar">
+<sc-for list="{{vistas}}" as="v"><button type="button" class="filtro" onClick="{{v.elegir}}" aria-pressed="{{v.activa}}">{{v.nombre}}<span class="num">{{v.num}}</span></button></sc-for>
+</div>
+<form role="search" class="entrada-grupo" style="flex: 0 1 320px" onSubmit="{{nada}}">
+<label for="buscar-lectores" class="solo-lector">Buscar lectores por nombre o usuario</label>
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
+<input id="buscar-lectores" type="search" value="{{q}}" onInput="{{buscar}}" placeholder="Nombre o @usuario">
+</form>
+</div>
+<p class="texto-pequeno texto-suave" aria-live="polite" style="padding-top: 10px">{{cuenta}}</p>
+
+<sc-if value="{{vacio}}"><div class="vacio" style="margin-top: 16px"><b>Ningún lector coincide</b><p class="texto-suave">Prueba con otro nombre o cambia de vista.</p></div></sc-if>
+
+<div>
+<sc-for list="{{lectores}}" as="l">
+<article class="lector">
+<a href="{{l.url}}" class="avatar tono-{{l.tono}}" aria-hidden="true" tabindex="-1">{{l.iniciales}}</a>
+<div style="min-width: 0">
+<div class="fila" style="gap: 4px 10px"><a href="{{l.url}}" class="titulo titulo-s">{{l.nombre}}</a><span class="texto-pequeno texto-suave">@{{l.usuario}}</span><span class="etiqueta">{{l.privacidad}}</span><sc-if value="{{l.teSigue}}"><span class="texto-mini texto-suave">Te sigue</span></sc-if></div>
+<p class="texto-pequeno" style="margin-top: 4px">{{l.bio}}</p>
+<p class="texto-mini texto-suave" style="margin-top: 4px">{{l.resumen}}</p>
+<sc-if value="{{l.publico}}"><div class="lecturas"><sc-for list="{{l.portadas}}" as="o"><a href="{{o.url}}" class="enlace-portada" aria-label="{{o.titulo}}"><dc-import name="Portada" obra="{{o}}" tam="xs"></dc-import></a></sc-for></div></sc-if>
+</div>
+<div class="fila acciones-lector">
+<button type="button" class="boton boton--contorno boton--pequeno boton-seguir" data-estado="{{l.estado}}" onClick="{{l.seguir}}" aria-pressed="{{l.pulsado}}">{{l.textoSeguir}}</button>
+<a href="{{l.url}}" class="boton boton--texto boton--pequeno">Ver perfil</a>
+</div>
+</article>
+</sc-for>
+</div>
+
+<div class="invitar">
+<div class="pila" style="gap: 2px; flex: 1 1 240px"><b class="titulo titulo-s">Invita a tus amigos</b><span class="texto-pequeno texto-suave">Comparte el enlace de tu perfil.</span></div>
+<code id="enlace-perfil">{{miEnlace}}</code>
+<button type="button" class="boton boton--principal boton--pequeno" onClick="{{copiar}}">{{textoCopiar}}</button>
+<span class="solo-lector" role="status">{{estadoCopia}}</span>
+</div>
+<div style="height: 72px"></div>
+</div>
+</main>
+
+<dc-import name="Pie"></dc-import>
+</template>
+<script type="text/x-dc" data-dc-logic="__root">
+// Lectores: búsqueda, vistas (todos, siguiendo, te siguen), seguir y copiar enlace
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { q: '', vista: 'todos', copia: '' }; }
+  renderVals() {
+    const A = ByBookAlmacen, D = ByBookDatos, st = this.state;
+    const miEnlace = new URL('perfil.html?u=yo', window.location.href).href;
+    const q = st.q.trim().toLowerCase().replace('@', '');
+    const todos = D.listaLectores();
+    const enVista = {
+      todos: todos,
+      siguiendo: todos.filter((l) => A.seguimiento(l.usuario)),
+      teSiguen: todos.filter((l) => l.teSigue)
+    };
+    const lista = enVista[st.vista].filter((l) => !q || l.nombre.toLowerCase().includes(q) || l.usuario.includes(q));
+    return {
+      vistas: [['todos', 'Todos'], ['siguiendo', 'Siguiendo'], ['teSiguen', 'Te siguen']].map((v) => ({ nombre: v[1], num: enVista[v[0]].length, activa: st.vista === v[0] ? 'true' : 'false', elegir: () => this.setState({ vista: v[0] }) })),
+      q: st.q, buscar: (e) => this.setState({ q: e.target.value }), nada: () => {},
+      cuenta: lista.length + (lista.length === 1 ? ' lector' : ' lectores'),
+      vacio: lista.length === 0,
+      lectores: lista.map((l) => {
+        const s = A.seguimiento(l.usuario);
+        const leidas = l.lecturas.filter((r) => r.estado === 'leido').length;
+        return {
+          nombre: l.nombre, usuario: l.usuario, iniciales: l.iniciales, tono: l.tono, bio: l.bio, teSigue: l.teSigue, publico: l.publico,
+          url: ByBook.urlPerfil(l.usuario),
+          privacidad: l.publico ? 'Público' : 'Privado',
+          resumen: l.publico ? leidas + ' leídas · ' + l.lecturas.filter((r) => r.resena).length + ' reseñas · le encanta: ' + l.formatoFavorito : 'Perfil privado: sus lecturas solo las ven sus seguidores',
+          portadas: l.lecturas.slice(0, 5).map((r) => ByBook.vistaObra(D.obra(r.obra))),
+          estado: s || 'ninguno', pulsado: s ? 'true' : 'false',
+          textoSeguir: s === 'siguiendo' ? 'Siguiendo ✓' : s === 'pendiente' ? 'Solicitud pendiente' : l.publico ? 'Seguir' : 'Solicitar seguir',
+          seguir: () => { A.alternarSeguir(l.usuario); this.forceUpdate(); }
+        };
+      }),
+      miEnlace,
+      textoCopiar: st.copia === 'ok' ? '¡Copiado!' : 'Copiar enlace',
+      estadoCopia: st.copia === 'ok' ? 'Enlace copiado al portapapeles' : st.copia === 'error' ? 'No se pudo copiar: selecciona el enlace y cópialo a mano' : '',
+      // Copia de verdad al portapapeles; "¡Copiado!" solo aparece si ha funcionado
+      copiar: () => {
+        const listo = () => { this.setState({ copia: 'ok' }); setTimeout(() => this.setState({ copia: '' }), 2000); };
+        const fallo = () => this.setState({ copia: 'error' });
+        if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(miEnlace).then(listo, fallo);
+        else {
+          // Navegadores antiguos o página abierta como archivo: copiamos con un campo temporal
+          const campo = document.createElement('textarea');
+          campo.value = miEnlace; document.body.appendChild(campo); campo.select();
+          const ok = document.execCommand('copy'); campo.remove();
+          ok ? listo() : fallo();
+        }
+      }
+    };
+  }
+}
+</script>
+
+<!-- Motor de plantillas, datos de ejemplo, tus datos guardados y piezas comunes (cabecera, pie, portada) -->
+<script src="js/dc.js"></script>
+<script src="js/datos.js"></script>
+<script src="js/almacen.js"></script>
+<script src="js/componentes.js"></script>
+</body>
+</html>
